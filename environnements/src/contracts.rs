@@ -10,9 +10,9 @@ pub trait SingleAgentEnv {
 }
 
 pub trait DeepSingleAgentEnv {
-    fn max_action_count(&self) -> i32;
+    fn max_action_count(&self) -> usize;
     fn state_description(&self) -> Vec<usize>;
-    fn state_dim(&self) -> i32;
+    fn state_dim(&self) -> usize;
     fn is_game_over(&self) -> bool;
     fn act_with_action_id(&mut self, action_id: usize);
     fn score(&self) -> f32;
