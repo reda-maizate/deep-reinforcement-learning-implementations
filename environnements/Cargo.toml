@@ -1,5 +1,5 @@
 [package]
-name = "drl_contracts"
+name = "environnements"
 version = "0.1.0"
 edition = "2021"
 
