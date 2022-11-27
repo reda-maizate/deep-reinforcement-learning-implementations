@@ -9,6 +9,18 @@ pub trait SingleAgentEnv {
     fn reset_random(&mut self);
 }
 
+pub trait DeepSingleAgentEnv {
+    fn max_action_count(&self) -> i32;
+    fn state_description(&self) -> Vec<usize>;
+    fn state_dim(&self) -> i32;
+    fn is_game_over(&self) -> bool;
+    fn act_with_action_id(&mut self, action_id: usize);
+    fn score(&self) -> f32;
+    fn available_actions_ids(&self) -> Vec<usize>;
+    fn reset(&mut self);
+    fn view(&self);
+}
+
 pub trait MDPEnv {
     fn states(&self) -> Vec<usize>;
     fn actions(&self) -> Vec<usize>;
