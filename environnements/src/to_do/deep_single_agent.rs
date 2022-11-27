@@ -1,8 +1,6 @@
 use crate::contracts::SingleAgentEnv;
 use rand::Rng;
 
-pub mod contracts;
-
 #[derive(Debug)]
 struct LineWorld {
     nb_cells: usize,

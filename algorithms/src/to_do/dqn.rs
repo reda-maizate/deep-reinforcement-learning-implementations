@@ -39,7 +39,7 @@ impl DeepQLearning {
             if env.is_game_over() {
                 if first_episode {
                     ema_score = env.score();
-                    ema_nb_steps = step;
+                    ema_nb_steps = step as f64;
                     first_episode = false;
                 }
                 else {
