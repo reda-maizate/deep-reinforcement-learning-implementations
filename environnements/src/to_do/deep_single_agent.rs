@@ -1,4 +1,3 @@
-use crate::contracts::SingleAgentEnv;
 use rand::Rng;
 
 #[derive(Debug)]
@@ -31,8 +30,8 @@ impl LineWorld {
         self.win_rate += self.score();
         self.game_played += 1;
         println!("Win rate: {}", match self.game_played > 0 {
-            true => self.win_rate/self.game_played,
-            false => 0,
+            true => self.win_rate as f64 / self.game_played as f64,
+            false => 0.0,
         });
         println!("Game played: {}", self.nb_cells - 2);
     }
@@ -43,16 +42,16 @@ impl DeepSingleAgentEnv for LineWorld {
         1
     }
 
-    fn state_description(&self) -> Vec<usize> {
-        vec![self.current_cell / (self.nb_cells - 1) * 2.0 - 1.0]
+    fn state_description(&self) -> Vec<f64> {
+        vec![self.current_cell as f64 / (self.nb_cells as f64 - 1.0) * 2.0 - 1.0]
     }
 
-    fn max_action_id(&self) -> usize {
+    fn max_action_count(&self) -> usize {
         2
     }
 
     fn is_game_over(&self) -> bool {
-        if self.step_count > (self.nb_cells ** 2) as u32 {
+        if self.step_count > (f64::powi(self.nb_cells, 2)) as u32 {
             return true;
         }
         (self.current_cell == 0) || (self.current_cell == self.nb_cells - 1)

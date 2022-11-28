@@ -11,7 +11,7 @@ pub trait SingleAgentEnv {
 
 pub trait DeepSingleAgentEnv {
     fn max_action_count(&self) -> usize;
-    fn state_description(&self) -> Vec<usize>;
+    fn state_description(&self) -> Vec<f64>;
     fn state_dim(&self) -> usize;
     fn is_game_over(&self) -> bool;
     fn act_with_action_id(&mut self, action_id: usize);
