@@ -1,7 +1,8 @@
 use rand::Rng;
+use crate::contracts::DeepSingleAgentEnv;
 
 #[derive(Debug)]
-struct LineWorld {
+pub struct LineWorld {
     nb_cells: usize,
     current_cell: usize,
     step_count: u32,
@@ -10,7 +11,7 @@ struct LineWorld {
 }
 
 impl LineWorld {
-    fn new(nb_cells: Option<usize>) -> Self {
+    pub fn new(nb_cells: Option<usize>) -> Self {
         let cells;
         if let Some(x) = nb_cells {
             cells = x;
@@ -26,7 +27,7 @@ impl LineWorld {
         }
     }
 
-    fn win_rate(&mut self) {
+    pub fn win_rate(&mut self) {
         self.win_rate += self.score();
         self.game_played += 1;
         println!("Win rate: {}", match self.game_played > 0 {
@@ -51,7 +52,7 @@ impl DeepSingleAgentEnv for LineWorld {
     }
 
     fn is_game_over(&self) -> bool {
-        if self.step_count > (f64::powi(self.nb_cells, 2)) as u32 {
+        if self.step_count > (usize::pow(self.nb_cells, 2)) as u32 {
             return true;
         }
         (self.current_cell == 0) || (self.current_cell == self.nb_cells - 1)

@@ -1,4 +1,5 @@
 use rand::Rng;
+use crate::contracts::SingleAgentEnv;
 
 #[derive(Debug)]
 struct LineWorld {
@@ -30,8 +31,8 @@ impl LineWorld {
         self.win_rate += self.score();
         self.game_played += 1;
         println!("Win rate: {}", match self.game_played > 0 {
-            true => self.win_rate/self.game_played,
-            false => 0,
+            true => self.win_rate / self.game_played as f32,
+            false => 0.0,
         });
         println!("Game played: {}", self.nb_cells - 2);
     }
