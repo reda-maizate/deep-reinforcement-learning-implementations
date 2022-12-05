@@ -28,7 +28,7 @@ fn main() {
     let v = ContinuousView::new()
         .add(s1);
 
-    Page::single(&v).save("scores.svg").unwrap();
+    Page::single(&v).save("src/results/scores-dqn.svg").unwrap();
 
     let s2: Plot = Plot::new(nb_steps).line_style(
         LineStyle::new()
@@ -37,5 +37,5 @@ fn main() {
     let v = ContinuousView::new()
         .add(s2);
 
-    Page::single(&v).save("nb_steps.svg").unwrap();
+    Page::single(&v).save("src/results/nb-steps-dqn.svg").unwrap();
 }
