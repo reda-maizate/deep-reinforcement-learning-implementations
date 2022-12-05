@@ -1,11 +1,9 @@
-use std::borrow::Borrow;
-use std::cmp::max_by;
+use std::f32;
 use std::fmt::Debug;
-use tch::nn::{self, Module, ModuleT, OptimizerConfig, Sequential, SequentialT};
-use indicatif::ProgressIterator;
+use pbr::ProgressBar;
+use tch::nn::{self, Module, OptimizerConfig, VarStore};
 use rand::Rng;
-use tch::{Device, Kind, kind};
-use tch::IValue::Tensor;
+use tch::{Device, kind, Kind, no_grad, Tensor};
 use environnements::contracts::DeepSingleAgentEnv;
 use crate::to_do::functions::{argmax, get_data_from_index_list};
 
@@ -19,7 +17,7 @@ pub struct DeepQLearning<T> {
     epsilon: f32
 }
 
-type Model = Box<dyn Fn(&tch::Tensor) -> tch::Tensor>;
+type Model = Box<dyn Fn(&Tensor) -> Tensor>;
 
 
 impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
@@ -33,22 +31,22 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
         }
     }
 
-    // fn model(vs: &nn::Path, nact: i64) -> Model {
-    //     let seq = nn::seq()
-    //         .add(nn::linear(vs / "l1", nact, 1, Default::default()));
-    //
-    //     let device = vs.device();
-    //     Box::new(move |xs: &tch::Tensor| {
-    //         xs.to_device(device).apply(&seq)
-    //     })
-    // }
-
-    pub fn train(&mut self) -> (Sequential, Vec<f64>, Vec<f64>) {
-        let device = Device::cuda_if_available();
-        let mut model_vs = nn::VarStore::new(device);
+    fn model(vs: &nn::Path, nact: i64) -> Model {
         let seq = nn::seq()
-            .add(nn::linear(&model_vs.root() / "linear1", 1, self.env.max_action_count() as i64, Default::default()));
-        // let q = DeepQLearning::<T>::model(&model_vs.root(), self.env.max_action_count() as i64);
+            .add(nn::linear(vs / "l1", 1,  nact, Default::default()));
+
+        let device = vs.device();
+        Box::new(move |xs: &Tensor| {
+            xs.to_device(device).apply(&seq)
+        })
+    }
+
+    pub fn train(&mut self) -> (VarStore, Vec<f64>, Vec<f64>) {
+        let device = Device::cuda_if_available();
+        let model_vs = VarStore::new(device);
+        //let seq = nn::seq()
+        //    .add(nn::linear(&model_vs.root() / "linear1", 1, self.env.max_action_count() as i64, Default::default()));
+        let q = Self::model(&model_vs.root(), self.env.max_action_count() as i64);
 
         let mut ema_score = 0.0;
         let mut ema_nb_steps = 0.0;
@@ -60,7 +58,12 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
 
         let mut optimizer = nn::Sgd::default().build(&model_vs, self.alpha).unwrap();
 
-        for _ in (0..1).progress() { //self.max_iter_count).progress() {
+        // Progress bar
+        let mut pb = ProgressBar::new(self.max_iter_count as u64);
+        pb.format("╢▌▌░╟");
+
+        for _ in 0..self.max_iter_count { //self.max_iter_count).progress() {
+            //self.env.view();
             if self.env.is_game_over() {
                 if first_episode {
                     ema_score = self.env.score() as f64;
@@ -80,14 +83,15 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
             let s = self.env.state_description();
             let aa = self.env.available_actions_ids();
 
-            //let test = tch::no_grad(|| q(&s));
-            // let q_pred = q(&tensor_s);
-            //<dyn Fn<(&Tensor,), Output=Tensor> as FnOnce<(&Tensor,)>>::Output
-            let tensor_s = tch::Tensor::of_slice(&s).to_kind(kind::Kind::Float);
-            let q_prep = seq.forward(&tensor_s);
-            println!("q_prep: {:?}", Vec::<f32>::from(&q_prep));
+            // let test = tch::no_grad(|| q(&s));
 
-            let mut action_id;
+            let tensor_s = Tensor::of_slice(&s).to_kind(Kind::Float);
+            // let q_prep = seq.forward(&tensor_s);
+            let q_prep = no_grad(|| q(&tensor_s));
+            //println!("q_prep: {:?}", Vec::<f32>::
+            // from(&q_prep));
+
+            let action_id;
             if (rand::thread_rng().gen_range(0..2) as f32).partial_cmp(&self.epsilon).unwrap().is_lt() {
                 action_id = aa[rand::thread_rng().gen_range(0..aa.len())];
             } else {
@@ -102,33 +106,33 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
             let s_p = self.env.state_description();
             let aa_p = self.env.available_actions_ids();
 
-            let mut y;
+            let y;
             if self.env.is_game_over() {
                 y = r;
             } else {
-                let tensor_s_p = tch::Tensor::of_slice(&s_p).to_kind(kind::Kind::Float);
-                let q_pred_p = seq.forward(&tensor_s_p);
-                println!("q_pred_p: {:?}", Vec::<f32>::from( &q_pred_p));
+                let tensor_s_p = Tensor::of_slice(&s_p).to_kind(Kind::Float);
+                // let q_pred_p = seq.forward(&tensor_s_p);
+                let q_pred_p = no_grad(|| q(&tensor_s_p));
+                //println!("q_pred_p: {:?}", Vec::<f32>::from( &q_pred_p));
                 let max_q_pred_p = argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_pred_p), aa_p.as_slice())).1;
                 y = r + self.gamma * max_q_pred_p;
             }
-            println!("{}", y);
 
-            // Code Python:
-            // with tf.GradientTape() as tape:
-            //     q_s_a = q(np.array([s]))[0][a]
-            //     loss = tf.reduce_mean((y - q_s_a) ** 2)
-            //
-            // grads = tape.gradient(loss, q.trainable_variables)
-            // opt.apply_gradients(zip(grads, q.trainable_variables))
+            // let q_s_a = seq.forward(&tensor_s).unsqueeze(0).get(0).get(action_id as i64);
+            let q_s_a = q(&tensor_s).unsqueeze(0).get(0).get(action_id as i64);
+            // Improvement possible : Parallelize the computation with multiple environments by changing the next line.
+            let loss = ((y - &q_s_a) * (y - &q_s_a)).requires_grad_(true);
+            //q_s_a.print();
 
-            // TODO
-            // let q_s_a = q(&tensor_s).get(0).get(action_id);
-            // let loss = (f64::powi(y - q_s_a, 2)).mean(Kind::Float);
-            // optimizer.backward_step(&loss);
+            //optimizer.zero_grad();
+            //println!("Before: {:?}", model_vs.trainable_variables());
+            //println!("Gradients: {:?}", loss.grad());
+            optimizer.backward_step(&loss);
+            //println!("After: {:?}", model_vs.trainable_variables());
 
             step += 1.0;
+            pb.inc();
         }
-        (seq, ema_score_progress, ema_nb_steps_progress)
+        (model_vs, ema_score_progress, ema_nb_steps_progress)
     }
 }
