@@ -1,9 +1,9 @@
 use std::f32;
 use std::fmt::Debug;
 use pbr::ProgressBar;
-use tch::nn::{self, Module, OptimizerConfig, VarStore};
+use tch::nn::{self, OptimizerConfig, VarStore};
 use rand::Rng;
-use tch::{Device, kind, Kind, no_grad, Tensor};
+use tch::{Device, Kind, no_grad, Tensor};
 use environnements::contracts::DeepSingleAgentEnv;
 use crate::to_do::functions::{argmax, get_data_from_index_list};
 
@@ -44,8 +44,6 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
     pub fn train(&mut self) -> (VarStore, Vec<f64>, Vec<f64>) {
         let device = Device::cuda_if_available();
         let model_vs = VarStore::new(device);
-        //let seq = nn::seq()
-        //    .add(nn::linear(&model_vs.root() / "linear1", 1, self.env.max_action_count() as i64, Default::default()));
         let q = Self::model(&model_vs.root(), self.env.max_action_count() as i64);
 
         let mut ema_score = 0.0;
@@ -83,13 +81,9 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
             let s = self.env.state_description();
             let aa = self.env.available_actions_ids();
 
-            // let test = tch::no_grad(|| q(&s));
-
             let tensor_s = Tensor::of_slice(&s).to_kind(Kind::Float);
-            // let q_prep = seq.forward(&tensor_s);
             let q_prep = no_grad(|| q(&tensor_s));
-            //println!("q_prep: {:?}", Vec::<f32>::
-            // from(&q_prep));
+            //println!("q_prep: {:?}", Vec::<f32>::from(&q_prep));
 
             let action_id;
             if (rand::thread_rng().gen_range(0..2) as f32).partial_cmp(&self.epsilon).unwrap().is_lt() {
@@ -111,20 +105,17 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
                 y = r;
             } else {
                 let tensor_s_p = Tensor::of_slice(&s_p).to_kind(Kind::Float);
-                // let q_pred_p = seq.forward(&tensor_s_p);
                 let q_pred_p = no_grad(|| q(&tensor_s_p));
                 //println!("q_pred_p: {:?}", Vec::<f32>::from( &q_pred_p));
                 let max_q_pred_p = argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_pred_p), aa_p.as_slice())).1;
                 y = r + self.gamma * max_q_pred_p;
             }
-
+            // optimizer.zero_grad();
             // let q_s_a = seq.forward(&tensor_s).unsqueeze(0).get(0).get(action_id as i64);
             let q_s_a = q(&tensor_s).unsqueeze(0).get(0).get(action_id as i64);
             // Improvement possible : Parallelize the computation with multiple environments by changing the next line.
             let loss = ((y - &q_s_a) * (y - &q_s_a)).requires_grad_(true);
-            //q_s_a.print();
 
-            //optimizer.zero_grad();
             //println!("Before: {:?}", model_vs.trainable_variables());
             //println!("Gradients: {:?}", loss.grad());
             optimizer.backward_step(&loss);
