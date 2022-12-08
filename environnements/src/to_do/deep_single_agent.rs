@@ -2,11 +2,9 @@ use crate::contracts::DeepSingleAgentEnv;
 
 #[derive(Debug)]
 pub struct LineWorld {
-    pub nb_cells: usize,
-    pub current_cell: usize,
-    pub step_count: u32,
-    // win_rate: f32,
-    // game_played: u32,
+    nb_cells: usize,
+    current_cell: usize,
+    step_count: u32,
 }
 
 impl LineWorld {
@@ -21,20 +19,8 @@ impl LineWorld {
             nb_cells: cells,
             current_cell: (cells / 2) as usize,
             step_count: 0,
-            // win_rate: 0.0,
-            // game_played: 0,
         }
     }
-
-    // pub fn win_rate(&mut self) {
-    //     self.win_rate += self.score();
-    //     self.game_played += 1;
-    //     println!("Win rate: {}", match self.game_played > 0 {
-    //         true => self.win_rate as f64 / self.game_played as f64,
-    //         false => 0.0,
-    //     });
-    //     println!("Game played: {}", self.nb_cells - 2);
-    // }
 }
 
 impl DeepSingleAgentEnv for LineWorld {
@@ -51,7 +37,7 @@ impl DeepSingleAgentEnv for LineWorld {
     }
 
     fn is_game_over(&self) -> bool {
-        if self.step_count > (usize::pow(self.nb_cells, 2)) as u32 {
+        if self.step_count > (self.nb_cells * 2) as u32 {
             return true;
         }
         (self.current_cell == 0) || (self.current_cell == self.nb_cells - 1)
@@ -99,5 +85,112 @@ impl DeepSingleAgentEnv for LineWorld {
             }
         }
         println!();
+    }
+}
+
+#[derive(Debug)]
+pub struct GridWorld {
+    nb_cols: usize,
+    nb_rows: usize,
+    nb_cells: usize,
+    current_cell: usize,
+    step_count: u32,
+}
+
+impl GridWorld {
+    pub fn new(nb_cols: Option<usize>, nb_rows: Option<usize>) -> Self {
+        let cols;
+        let rows;
+        if let (Some(x), Some(y)) = (nb_cols, nb_rows) {
+            cols = x;
+            rows = y;
+        } else {
+            cols = 5;
+            rows = 5;
+        }
+        Self {
+            nb_cols: cols,
+            nb_rows: rows,
+            nb_cells: cols * rows,
+            current_cell: 0,
+            step_count: 0,
+        }
+    }
+}
+
+impl DeepSingleAgentEnv for GridWorld {
+    fn max_action_count(&self) -> usize {
+        4
+    }
+
+    fn state_description(&self) -> Vec<f64> {
+        vec![self.current_cell as f64 / (self.nb_cells as f64 - 1.0) * 2.0 - 1.0]
+    }
+
+    fn state_dim(&self) -> usize {
+        2
+    }
+
+    fn is_game_over(&self) -> bool {
+        if self.step_count > (self.nb_cells * 2) as u32 {
+            return true;
+        }
+        (self.current_cell == self.nb_rows - 1) || (self.current_cell == self.nb_cells - 1)
+    }
+
+    fn act_with_action_id(&mut self, action_id: usize) {
+        // O: LEFT
+        // 1: RIGHT
+        // 2: UP
+        // 3: DOWN
+        self.step_count += 1;
+        if (action_id == 0) && (self.current_cell % self.nb_rows != 0) {
+            self.current_cell -= 1;
+        } else if (action_id == 1) && (self.current_cell % self.nb_rows != self.nb_rows - 1) {
+            self.current_cell += 1;
+        } else if (action_id == 2) && (self.current_cell as i32 - self.nb_rows as i32 >= 0) {
+            self.current_cell -= self.nb_rows;
+        } else if (action_id == 3) && (self.current_cell + self.nb_rows <= self.nb_cells - 1) {
+            self.current_cell += self.nb_rows;
+        }
+    }
+
+    fn score(&self) -> f32 {
+        if self.current_cell == self.nb_rows - 1 {
+            return -3.0;
+        } else if self.current_cell == self.nb_cells - 1 {
+            return 1.0;
+        }
+        0.0
+    }
+
+    fn available_actions_ids(&self) -> Vec<usize> {
+        vec![0, 1, 2, 3]
+    }
+
+    fn reset(&mut self) {
+        self.current_cell = 0;
+        self.step_count = 0;
+    }
+
+    fn view(&self) {
+        println!("Game Over: {}", self.is_game_over());
+        println!("Score: {}", self.score());
+        for i in 0..self.nb_cols {
+            for j in 0..self.nb_rows {
+                if (i * self.nb_rows) + j == self.current_cell {
+                    print!("X");
+                } else if i == 0 && j == 0 {
+                    print!("S");
+                } else if i == 0 && j == self.nb_rows - 1 {
+                    print!("L");
+                } else if i == self.nb_cols - 1 && j == self.nb_rows - 1  {
+                    print!("W");
+                } else {
+                    print!("_");
+                }
+            }
+            println!();
+        }
     }
 }
