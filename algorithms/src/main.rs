@@ -9,8 +9,10 @@ use environnements;
 pub mod to_do;
 
 fn main() {
-    let line_world_env = LineWorld::new(Option::Some(5));
-    let (_dqn, ema_scores, ema_nb_step) = dqn::DeepQLearning::new(line_world_env).train();
+    let line_world_env = LineWorld::new(Option::Some(10));
+    let (dqn, ema_scores, ema_nb_step) = dqn::DeepQLearning::new(line_world_env).train();
+    println!("\nGradients: {:?}", dqn.trainable_variables());
+    dqn.variables().get("weight").unwrap().print();
     let mut scores = vec![];
     let mut nb_steps = vec![];
     for i in 0..ema_scores.len() {

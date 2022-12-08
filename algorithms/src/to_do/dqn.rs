@@ -27,13 +27,18 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
             max_iter_count: 10_000,
             gamma: 0.99,
             alpha: 0.1,
-            epsilon: 0.2
+            epsilon: 0.1
         }
     }
 
     fn model(vs: &nn::Path, nact: i64) -> Model {
+        let conf = nn::LinearConfig{
+            bias: true,
+            ..Default::default()
+        };
+        let linear = nn::linear(vs, 1,  nact, conf);
         let seq = nn::seq()
-            .add(nn::linear(vs / "l1", 1,  nact, Default::default()));
+            .add(linear);
 
         let device = vs.device();
         Box::new(move |xs: &Tensor| {
@@ -60,7 +65,7 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
         let mut pb = ProgressBar::new(self.max_iter_count as u64);
         pb.format("╢▌▌░╟");
 
-        for _ in 0..self.max_iter_count { //self.max_iter_count).progress() {
+        for _ in 0..self.max_iter_count {
             //self.env.view();
             if self.env.is_game_over() {
                 if first_episode {
@@ -83,7 +88,6 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
 
             let tensor_s = Tensor::of_slice(&s).to_kind(Kind::Float);
             let q_prep = no_grad(|| q(&tensor_s));
-            //println!("q_prep: {:?}", Vec::<f32>::from(&q_prep));
 
             let action_id;
             if (rand::thread_rng().gen_range(0..2) as f32).partial_cmp(&self.epsilon).unwrap().is_lt() {
@@ -106,20 +110,16 @@ impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
             } else {
                 let tensor_s_p = Tensor::of_slice(&s_p).to_kind(Kind::Float);
                 let q_pred_p = no_grad(|| q(&tensor_s_p));
-                //println!("q_pred_p: {:?}", Vec::<f32>::from( &q_pred_p));
                 let max_q_pred_p = argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_pred_p), aa_p.as_slice())).1;
                 y = r + self.gamma * max_q_pred_p;
             }
-            // optimizer.zero_grad();
-            // let q_s_a = seq.forward(&tensor_s).unsqueeze(0).get(0).get(action_id as i64);
+
+            optimizer.zero_grad();
             let q_s_a = q(&tensor_s).unsqueeze(0).get(0).get(action_id as i64);
             // Improvement possible : Parallelize the computation with multiple environments by changing the next line.
-            let loss = ((y - &q_s_a) * (y - &q_s_a)).requires_grad_(true);
+            let loss = (y - &q_s_a).pow(&Tensor::of_slice(&[2]));
 
-            //println!("Before: {:?}", model_vs.trainable_variables());
-            //println!("Gradients: {:?}", loss.grad());
             optimizer.backward_step(&loss);
-            //println!("After: {:?}", model_vs.trainable_variables());
 
             step += 1.0;
             pb.inc();
