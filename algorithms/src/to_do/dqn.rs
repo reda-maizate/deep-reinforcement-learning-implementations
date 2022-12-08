@@ -1,98 +1,129 @@
-use tch::nn;
-use indicatif::ProgressIterator;
+use std::f32;
+use std::fmt::Debug;
+use pbr::ProgressBar;
+use tch::nn::{self, OptimizerConfig, VarStore};
+use rand::Rng;
+use tch::{Device, Kind, no_grad, Tensor};
+use environnements::contracts::DeepSingleAgentEnv;
+use crate::to_do::functions::{argmax, get_data_from_index_list};
 
-struct DeepQLearning {
-    env: DeepSingleAgentEnv,
+
+#[derive(Debug)]
+pub struct DeepQLearning<T> {
+    env: T,
     max_iter_count: u32,
     gamma: f32,
-    alpha: f32,
+    alpha: f64,
     epsilon: f32
 }
 
+type Model = Box<dyn Fn(&Tensor) -> Tensor>;
 
-impl DeepQLearning {
-    fn new(env: DeepSingleAgentEnv) -> Self {
+
+impl<T: DeepSingleAgentEnv> DeepQLearning<T> {
+    pub fn new(env: T) -> Self {
         Self {
             env,
             max_iter_count: 10_000,
             gamma: 0.99,
             alpha: 0.1,
-            epsilon: 0.2
+            epsilon: 0.1
         }
     }
 
-    fn train(&mut self) {
-        let mut q = nn::seq()
-            .add(nn::linear(self.env.max_action_count(), 1, Default::default()));
+    fn model(vs: &nn::Path, nact: i64) -> Model {
+        let conf = nn::LinearConfig{
+            bias: true,
+            ..Default::default()
+        };
+        let linear = nn::linear(vs, 1,  nact, conf);
+        let seq = nn::seq()
+            .add(linear);
+
+        let device = vs.device();
+        Box::new(move |xs: &Tensor| {
+            xs.to_device(device).apply(&seq)
+        })
+    }
+
+    pub fn train(&mut self) -> (VarStore, Vec<f64>, Vec<f64>) {
+        let device = Device::cuda_if_available();
+        let model_vs = VarStore::new(device);
+        let q = Self::model(&model_vs.root(), self.env.max_action_count() as i64);
 
         let mut ema_score = 0.0;
         let mut ema_nb_steps = 0.0;
-        first_episode = true;
+        let mut first_episode = true;
 
-        let mut step = 0;
-        ema_score_progess = Vec::new();
-        ema_nb_steps_progress = Vec::new();
+        let mut step = 0.0;
+        let mut ema_score_progress = Vec::new();
+        let mut ema_nb_steps_progress = Vec::new();
 
-        let mut optimizer = nn::Adam::default().build(&q, 1e-3).unwrap();
+        let mut optimizer = nn::Sgd::default().build(&model_vs, self.alpha).unwrap();
 
-        for _ in (0..max_iter_count).progress() {
-            if env.is_game_over() {
+        // Progress bar
+        let mut pb = ProgressBar::new(self.max_iter_count as u64);
+        pb.format("╢▌▌░╟");
+
+        for _ in 0..self.max_iter_count {
+            //self.env.view();
+            if self.env.is_game_over() {
                 if first_episode {
-                    ema_score = env.score();
-                    ema_nb_steps = step as f64;
+                    ema_score = self.env.score() as f64;
+                    ema_nb_steps = step;
                     first_episode = false;
-                }
-                else {
-                    ema_score = (1 - 0.9) * env.score() + 0.9 * ema_score;
-                    ema_nb_steps = (1 - 0.9) * step + 0.9 * ema_nb_steps;
-                    ema_score_progess.push(ema_score);
+                } else {
+                    ema_score = (1.0 - 0.9) * self.env.score() as f64 + 0.9 * ema_score;
+                    ema_nb_steps = (1.0 - 0.9) * step + 0.9 * ema_nb_steps;
+                    ema_score_progress.push(ema_score);
                     ema_nb_steps_progress.push(ema_nb_steps);
                 }
 
-                env.reset();
-                step = 0;
+                self.env.reset();
+                step = 0.0;
             }
 
-            let mut s = env.state_description();
-            let mut aa = env.available_actions_ids();
+            let s = self.env.state_description();
+            let aa = self.env.available_actions_ids();
 
-            let mut q_pred = q.forward(&s);
-            if rand::thread_rng().gen_range(0..1) < epsilon {
-                let mut action_id = aa[rand::thread_rng().gen_range(0..aa.len())];
-            }
-            else {
-                let mut action_id = aa[q_pred.argmax(0, true).unwrap().item::<usize>()];
-            }
+            let tensor_s = Tensor::of_slice(&s).to_kind(Kind::Float);
+            let q_prep = no_grad(|| q(&tensor_s));
 
-            let mut old_score = env.score();
-            env.act_with_action_id(action_id);
-            let mut new_score = env.score();
-            let mut r = new_score - old_score;
-
-            let s_p = env.state_description();
-            let aa_p = env.available_actions_ids();
-
-            if env.is_game_over() {
-                let mut y = r;
+            let action_id;
+            if (rand::thread_rng().gen_range(0..2) as f32).partial_cmp(&self.epsilon).unwrap().is_lt() {
+                action_id = aa[rand::thread_rng().gen_range(0..aa.len())];
             } else {
-                let mut q_pred_p = q.forward(&s_p);
-                let mut max_q_pred_p = q_pred_p.max(0, true).unwrap().item::<f32>();
-                let mut y = r + gamma * max_q_pred_p;
+                action_id = aa[argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_prep), aa.as_slice())).0];
             }
 
+            let old_score = self.env.score();
+            self.env.act_with_action_id(action_id);
+            let new_score = self.env.score();
+            let r = new_score - old_score;
 
-            //TODO: Implement this in Rust
-            /*
-            with tf.GradientTape() as tape:
-                q_s_a = q(np.array([s]))[0][a]
-                loss = tf.reduce_mean((y - q_s_a) ** 2)
+            let s_p = self.env.state_description();
+            let aa_p = self.env.available_actions_ids();
 
-            grads = tape.gradient(loss, q.trainable_variables)
-            opt.apply_gradients(zip(grads, q.trainable_variables))
+            let y;
+            if self.env.is_game_over() {
+                y = r;
+            } else {
+                let tensor_s_p = Tensor::of_slice(&s_p).to_kind(Kind::Float);
+                let q_pred_p = no_grad(|| q(&tensor_s_p));
+                let max_q_pred_p = argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_pred_p), aa_p.as_slice())).1;
+                y = r + self.gamma * max_q_pred_p;
+            }
 
-            step += 1
-            return q, ema_score_progress, ema_nb_steps_progress
-             */
+            optimizer.zero_grad();
+            let q_s_a = q(&tensor_s).unsqueeze(0).get(0).get(action_id as i64);
+            // Improvement possible : Parallelize the computation with multiple environments by changing the next line.
+            let loss = (y - &q_s_a).pow(&Tensor::of_slice(&[2]));
+
+            optimizer.backward_step(&loss);
+
+            step += 1.0;
+            pb.inc();
         }
+        (model_vs, ema_score_progress, ema_nb_steps_progress)
     }
 }

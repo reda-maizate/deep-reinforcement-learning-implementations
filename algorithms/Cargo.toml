@@ -8,4 +8,6 @@ edition = "2021"
 [dependencies]
 environnements = {path="../environnements"}
 tch = "0.9.0"
-indicatif = "0.17.0"
+pbr = "1.0.4"
+rand = "0.8.4"
+plotlib = "0.5.1"
