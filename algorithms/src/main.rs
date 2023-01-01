@@ -9,7 +9,7 @@ use environnements;
 pub mod to_do;
 
 fn main() {
-    // let line_world_env = LineWorld::new(Option::Some(10));
+    let line_world_env = LineWorld::new(Option::Some(10));
     // let grid_world_env = GridWorld::new(Some(5), Some(5));
     let (dqn, ema_scores, ema_nb_step) = dqn::DeepQLearning::new(line_world_env).train();
     // let (dqn, ema_scores, ema_nb_step) = dqn::DeepQLearning::new(grid_world_env).train();
