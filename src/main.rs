@@ -49,20 +49,22 @@ impl Game {
 
     fn generate_grid(&mut self) {
         // Générez ici la grille de jeu
-        self.grid = vec![vec![' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
-                         vec!['#', ' ', '#', ' ', ' ', ' ', '#', ' ', '#'],
-                         vec!['#', ' ', ' ', ' ', ' ', ' ', '#', ' ', '#'],
-                         vec!['#', '#', '#', '#', '#', ' ', ' ', ' ', '#'],
-                         vec![' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#'],
-                         vec!['#', ' ', '#', '#', ' ', ' ', '#', ' ', '#'],
-                         vec!['#', ' ', ' ', ' ', ' ', ' ', '#', ' ', '#'],
-                         vec!['#', '#', '#', '#', '#', '#', '#', '#', '#']];
+        self.grid = vec![vec![' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
+                         vec!['#', ' ', '#', ' ', ' ', ' ', '#', ' ', '#', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
+                         vec!['#', ' ', ' ', ' ', ' ', ' ', '#', ' ', '#', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
+                         vec!['#', '#', '#', '#', '#', ' ', ' ', ' ', ' ', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
+                         vec![' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
+                         vec!['#', ' ', '#', '#', ' ', ' ', '#', ' ', ' ', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
+                         vec!['#', ' ', ' ', ' ', ' ', ' ', '#', ' ', '#', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
+                         vec!['#', '#', '#', '#', '#', '#', '#', '#', '#', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
+                         vec![' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],
+                         vec!['#', ' ', '#', ' ', ' ', ' ', '#', ' ', ' ', ' ', ' ', '.', ' ', '#', ' ', ' ', ' ', '#'],];
     }
 
     fn generate_ghosts(&mut self) {
         // Générez ici les fantômes
-        self.ghosts = vec![Ghost { x: 3, y: 2, direction: Direction::Right },
-                           Ghost { x: 4, y: 5, direction: Direction::Right }];
+        self.ghosts = vec![Ghost { x: 6, y: 2, direction: Direction::Right },
+                           Ghost { x: 9, y: 5, direction: Direction::Right }];
     }
 
     fn update(&mut self) {
@@ -145,39 +147,37 @@ enum Input {
 impl Ghost {
     fn update(&mut self, player: &Player, grid: &mut Vec<Vec<char>>) {
         // Mettez à jour ici la position du fantôme en fonction de la position du joueur et des murs
-        match self.direction {
-            Direction::Up => {
-                if grid[self.x as usize - 1][self.y as usize] != WALL {
-                    self.x -= 1;
-                } else {
-                    self.direction = Direction::Down;
-                }
+        let past_x = self.x;
+        let past_y = self.y;
+
+        if player.x > self.x {
+            if grid[self.x as usize + 1][self.y as usize] != WALL {
+                self.x += 1;
+            } else {
+                self.direction = Direction::Up;
             }
-            Direction::Down => {
-                if grid[self.x as usize + 1][self.y as usize] != WALL {
-                    self.x += 1;
-                } else {
-                    self.direction = Direction::Up;
-                }
-            }
-            Direction::Left => {
-                if grid[self.x as usize][self.y as usize - 1] != WALL {
-                    self.y -= 1;
-                } else {
-                    self.direction = Direction::Right;
-                }
-            }
-            Direction::Right => {
-                if grid[self.x as usize][self.y as usize + 1] != WALL {
-                    self.y += 1;
-                } else {
-                    self.direction = Direction::Left;
-                }
+        } else if player.x < self.x {
+            if grid[self.x as usize - 1][self.y as usize] != WALL {
+                self.x -= 1;
+            } else {
+                self.direction = Direction::Down;
             }
         }
-
-
-
+        else if player.y > self.y {
+            if grid[self.x as usize][self.y as usize + 1] != WALL {
+                self.y += 1;
+            } else {
+                self.direction = Direction::Left;
+            }
+        }
+        else if player.y < self.y {
+            if grid[self.x as usize][self.y as usize - 1] != WALL {
+                self.y -= 1;
+            } else {
+                self.direction = Direction::Right;
+            }
+        }
+        grid[past_x as usize][past_y as usize] = ' ';
         grid[self.x as usize][self.y as usize] = GHOST;
     }
 }
