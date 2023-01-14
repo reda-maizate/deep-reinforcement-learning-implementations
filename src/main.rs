@@ -175,9 +175,6 @@ impl Game {
             self.finished = true;
             println!("Game over!");
             return;
-        } else if self.score >= TOTAL_GUMS {
-            self.finished = true;
-            println!("You win!");
         } else {
             println!("Score: {}", self.score);
         }
@@ -189,14 +186,11 @@ impl Game {
         if self.score >= TOTAL_GUMS {
             // Passez au niveau suivant ici
             self.finished = true;
+            println!("You win!");
             return;
         }
     }
 
-    fn player_collision(&self) -> bool {
-        // Vérifiez si le joueur a collisionné avec un fantôme ici et retournez true en conséquence
-        false
-    }
 
     fn handle_input(&mut self, direction: Direction) {
         // Mettez à jour ici la direction du joueur en fonction de l'entrée du joueur
