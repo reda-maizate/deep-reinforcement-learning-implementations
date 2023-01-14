@@ -1,13 +1,7 @@
 use std::io;
-use rand::Rng;
+use rand::seq::SliceRandom;
 
-enum Input {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
+#[derive(Debug, Copy, Clone)]
 enum Direction {
     Up,
     Down,
@@ -15,18 +9,20 @@ enum Direction {
     Right,
 }
 
+#[derive(Debug)]
 struct Player {
     x: i32,
     y: i32,
     direction: Direction,
 }
 
+#[derive(Debug)]
 struct Ghost {
     x: i32,
     y: i32,
-    direction: Direction,
 }
 
+#[derive(Debug)]
 struct Game {
     player: Player,
     ghosts: Vec<Ghost>,
@@ -71,7 +67,7 @@ impl Player {
 }
 
 impl Ghost {
-    fn update(&mut self, player: &Player, grid: &mut Vec<Vec<char>>) {
+    fn update(&mut self, grid: &mut Vec<Vec<char>>) {
         // Faire avancer le fantôme de manière aléatoire ici
         let past_x = self.x;
         let past_y = self.y;
@@ -79,14 +75,17 @@ impl Ghost {
         // TODO: A remplacer par la méthode `available_actions` de l'environnement
         let mut actions = vec![];
         // TODO: error -> "expected `i32`, found `usize`"
-        if grid[self.x + 1 as usize][self.y as usize] != WALL {
-            actions.push(Direction::Up);
-        } else if grid[self.x - 1 as usize] != WALL {
+        if grid[self.x as usize + 1][self.y as usize] != WALL {
             actions.push(Direction::Down);
-        } else if grid[self.y + 1 as usize] != WALL {
-            actions.push(Direction::Left);
-        } else if grid[self.y - 1 as usize] != WALL {
+        }
+        if grid[self.x as usize - 1][self.y as usize] != WALL {
+            actions.push(Direction::Up);
+        }
+        if grid[self.x as usize][self.y as usize + 1] != WALL {
             actions.push(Direction::Right);
+        }
+        if grid[self.x as usize][self.y as usize - 1] != WALL {
+            actions.push(Direction::Left);
         }
 
         let mut rng = rand::thread_rng();
@@ -99,7 +98,7 @@ impl Ghost {
             Direction::Right => self.y += 1,
         }
 
-        grid[past_x as usize][past_y as usize] = '.';
+        grid[past_x as usize][past_y as usize] = PATH;
         grid[self.x as usize][self.y as usize] = GHOST;
     }
 }
@@ -132,10 +131,24 @@ impl Game {
         ];
     }
 
-    fn generate_ghosts(&mut self) {
+    fn generate_ghosts(&mut self, nb_ghosts: i32) {
         // Générez ici les fantômes
-        self.ghosts = vec![Ghost { x: 6, y: 2, direction: Direction::Right },
-                           Ghost { x: 9, y: 5, direction: Direction::Right }];
+        let mut possible_spawn_positions = vec![];
+        for i in 0..self.grid.len() {
+            for j in 0..self.grid[i].len() {
+                if self.grid[i][j] == PATH {
+                    possible_spawn_positions.push((i, j));
+                }
+            }
+        }
+
+        self.ghosts = vec![];
+        for _ in 0..nb_ghosts {
+            let mut rng = rand::thread_rng();
+            let (x, y) = possible_spawn_positions.choose(&mut rng).unwrap();
+            self.ghosts.push(Ghost { x: *x as i32, y: *y as i32 });
+            self.grid[*x][*y] = GHOST;
+        }
     }
 
     fn update(&mut self) {
@@ -145,7 +158,7 @@ impl Game {
 
         // Mettez à jour la direction des fantômes
         for ghost in &mut self.ghosts {
-            ghost.update(&self.player, &mut self.grid);
+            ghost.update( &mut self.grid);
         }
 
         // Vérifiez si le joueur a mangé une gomme ou une super-gomme et mettez à jour le score en conséquence
@@ -170,7 +183,7 @@ impl Game {
         }
 
         // Effacez la gomme ou la super-gomme de la grille
-        self.grid[self.player.x as usize][self.player.y as usize] = 'P';
+        self.grid[self.player.x as usize][self.player.y as usize] = PLAYER;
 
         // Vérifiez si le joueur a gagné le niveau en mangeant toutes les gommes
         if self.score >= TOTAL_GUMS {
@@ -192,12 +205,12 @@ impl Game {
 
     fn render(&mut self) {
         // Affichez ici la grille de jeu et les personnages à l'écran
-        self.grid[self.player.x as usize][self.player.y as usize] = 'P';
+        self.grid[self.player.x as usize][self.player.y as usize] = PLAYER;
         for row in &self.grid {
             for cell in row {
                 print!("{}", cell);
             }
-            println!("");
+            println!();
         }
         self.grid[self.player.x as usize][self.player.y as usize] = PATH;
     }
@@ -225,14 +238,16 @@ fn get_input() -> Direction {
 
 fn main() {
     let mut game = Game::new();
+    let nb_ghosts = 3;
+
     game.generate_grid();
-    game.generate_ghosts();
+    game.generate_ghosts(nb_ghosts);
     println!("~~~~~ Pacman ~~~~~");
     println!("Instructions:");
     println!("Use the 'u', 'd', 'l', 'r' keys to move the player");
     println!("Press 'q' to quit the game");
-    println!("");
-    println!("");
+    println!();
+    println!();
     println!("Starting game...");
     game.render();
 
