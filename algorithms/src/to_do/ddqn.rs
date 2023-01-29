@@ -14,46 +14,33 @@ pub struct DDQN<T> {
     gamma: f32,
     alpha: f64,
     epsilon: f32,
+    target_update_frequency: u32,
 }
 
 type Model = Box<dyn Fn(&Tensor) -> Tensor>;
 
 
 impl<T: DeepSingleAgentEnv> DDQN<T> {
-    fn new(env: T) -> Self {
+    pub fn new(env: T) -> Self {
         Self {
             env,
             max_iter_count: 10_000,
             gamma: 0.99,
             alpha: 0.1,
             epsilon: 0.1,
+            target_update_frequency: 10,
         }
     }
 
-    fn q_model(nact: i64, device: Device) -> Model {
-        let vs = nn::VarStore::new(device);
+    fn q_model(vs: &nn::Path, nact: i64) -> Model {
         let conf = nn::LinearConfig{
             bias: true,
             ..Default::default()
         };
-        let linear = nn::linear(&vs.root(), 1, nact, conf);
+        let linear = nn::linear(vs, 1, nact, conf);
         let seq = nn::seq()
             .add(linear);
-        let device = vs.device();
-        Box::new(move |xs: &Tensor| {
-            xs.to_device(device).apply(&seq)
-        })
-    }
 
-    fn target_model(nact: i64, device: Device) -> Model {
-        let vs = nn::VarStore::new(device);
-        let conf = nn::LinearConfig{
-            bias: true,
-            ..Default::default()
-        };
-        let linear = nn::linear(&vs.root(), 1, nact, conf);
-        let seq = nn::seq()
-            .add(linear);
         let device = vs.device();
         Box::new(move |xs: &Tensor| {
             xs.to_device(device).apply(&seq)
@@ -62,11 +49,11 @@ impl<T: DeepSingleAgentEnv> DDQN<T> {
 
     pub fn train(&mut self) -> (VarStore, Vec<f64>, Vec<f64>) {
         let device = Device::cuda_if_available();
-        let q_model_vs = VarStore::new(device);
-        let q = Self::model(&q_model_vs.root(), self.env.max_action_count() as i64);
+        let model_vs = VarStore::new(device);
+        let q = Self::q_model(&model_vs.root(), self.env.max_action_count() as i64);
 
-        let target_model_vs = VarStore::new(device);
-        let target = Self::model(&target_model_vs.root(), self.env.max_action_count() as i64);
+        let mut target_model_vs = VarStore::new(device);
+        let q_target = Self::q_model(&target_model_vs.root(), self.env.max_action_count() as i64);
 
         let mut ema_score = 0.0;
         let mut ema_nb_steps = 0.0;
@@ -82,7 +69,7 @@ impl<T: DeepSingleAgentEnv> DDQN<T> {
         let mut pb = ProgressBar::new(self.max_iter_count as u64);
         pb.format("╢▌▌░╟");
 
-        for _ in 0..self.max_iter_count {
+        for t in 0..self.max_iter_count {
             //self.env.view();
             if self.env.is_game_over() {
                 if first_episode {
@@ -104,12 +91,12 @@ impl<T: DeepSingleAgentEnv> DDQN<T> {
             let aa = self.env.available_actions_ids();
 
             let tensor_s = Tensor::of_slice(&s).to_kind(Kind::Float);
-            let q_prep = no_grad(|| q(&tensor_s));
 
             let action_id;
             if (rand::thread_rng().gen_range(0..2) as f32).partial_cmp(&self.epsilon).unwrap().is_lt() {
                 action_id = aa[rand::thread_rng().gen_range(0..aa.len())];
             } else {
+                let q_prep = no_grad(|| q(&tensor_s));
                 action_id = aa[argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_prep), aa.as_slice())).0];
             }
 
@@ -126,7 +113,7 @@ impl<T: DeepSingleAgentEnv> DDQN<T> {
                 y = r;
             } else {
                 let tensor_s_p = Tensor::of_slice(&s_p).to_kind(Kind::Float);
-                let q_pred_p = no_grad(|| q(&tensor_s_p));
+                let q_pred_p = no_grad(|| q_target(&tensor_s_p));
                 let max_q_pred_p = argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_pred_p), aa_p.as_slice())).1;
                 y = r + self.gamma * max_q_pred_p;
             }
@@ -138,9 +125,13 @@ impl<T: DeepSingleAgentEnv> DDQN<T> {
 
             optimizer.backward_step(&loss);
 
+            if t % self.target_update_frequency == 0 {
+                target_model_vs.copy(&model_vs).unwrap();
+            }
+
             step += 1.0;
             pb.inc();
         }
-        (model_vs, ema_score_progress, ema_nb_steps_progress)
+        (target_model_vs, ema_score_progress, ema_nb_steps_progress)
     }
 }
