@@ -1,3 +1,4 @@
+use rand::{thread_rng, seq::SliceRandom};
 
 pub fn get_data_from_index_list<T: Copy>(vector: &Vec<T>, index: &[usize]) -> Vec<T> {
     let mut new_vector = vec![];
@@ -17,4 +18,9 @@ pub fn argmax<T: Copy + std::cmp::PartialOrd>(vector: &Vec<T>) -> (usize, T) {
         }
     }
     (argmax, max)
+}
+
+pub fn get_random_mini_batch<T: Clone>(vector: &Vec<T>, batch_size: usize) -> Vec<T> {
+    let mut rng = thread_rng();
+    vector.choose_multiple(&mut rng, batch_size).cloned().collect()
 }
