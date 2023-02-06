@@ -3,7 +3,7 @@ use std::f32;
 use std::fmt::Debug;
 use pbr::ProgressBar;
 use tch::nn::{self, OptimizerConfig, VarStore};
-use rand::Rng;
+use rand::{Rng, thread_rng};
 use tch::{Device, Kind, no_grad, Tensor};
 use environnements::contracts::DeepSingleAgentEnv;
 use crate::to_do::functions::{argmax, get_data_from_index_list, update_score, step};

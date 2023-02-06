@@ -11,25 +11,25 @@ pub mod to_do;
 pub mod utils;
 
 fn main() {
-    // let line_world_env = LineWorld::new(Option::Some(10));
+    let mut line_world_env = LineWorld::new(Option::Some(10));
     let mut grid_world_env = GridWorld::new(Some(5), Some(5));
     // let mut grid_world_env_er = GridWorld::new(Some(5), Some(5));
 
     // DQN Basic
     let mut dqn = DeepQLearning::new();
-    let mut ema = dqn.train(grid_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1);
+    let mut ema = dqn.train(line_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1);
     let model_dqn = dqn.get_model();
     // DDQN Basic
     // let mut ddqn = DDQN::new();
-    // let ema = ddqn.train(grid_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1, 10);
+    // let mut ema = ddqn.train(line_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1, 10);
     // let model_ddqn = ddqn.get_model();
     // DDQN with ER
     // let mut ddqn_er = DDQN::new();
-    // let ema_er = ddqn_er.train_with_er(grid_world_env_er.borrow_mut(), 5_000, 0.99, 0.1, 0.1, 10, 100);
+    // let mut ema = ddqn_er.train_with_er(line_world_env.borrow_mut(), 5_000, 0.99, 0.1, 0.1, 10, 100);
     // let model_ddqn_er = ddqn_er.get_model();
 
     println!("\nGradients: {:?}", model_dqn.trainable_variables());
     model_dqn.variables().get("weight").unwrap().print();
 
-    ema.display_results();
+    ema.display_results("dqn");
 }

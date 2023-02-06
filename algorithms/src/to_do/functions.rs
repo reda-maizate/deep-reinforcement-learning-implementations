@@ -45,8 +45,8 @@ pub fn update_score<T: DeepSingleAgentEnv>(env: &mut T, ema: &mut EMA) {
 
 pub fn step<T: DeepSingleAgentEnv>(env: &mut T, q: &Model, tensor_s: &Tensor, aa: &Vec<usize>, epsilon: f32) -> (usize, f32, Vec<f64>, Vec<usize>) {
     let action_id;
-    if (rand::thread_rng().gen_range(0..2) as f32).partial_cmp(&epsilon).unwrap().is_lt() {
-        action_id = aa[rand::thread_rng().gen_range(0..aa.len())];
+    if (thread_rng().gen_range(0.0..1.0) as f32).partial_cmp(&epsilon).unwrap().is_lt() {
+        action_id = aa[thread_rng().gen_range(0..aa.len())];
     } else {
         let q_prep = no_grad(|| q(&tensor_s));
         action_id = aa[argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_prep), aa.as_slice())).0];

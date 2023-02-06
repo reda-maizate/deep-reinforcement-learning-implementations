@@ -27,7 +27,7 @@ impl EMA {
         }
     }
 
-    pub fn display_results(&mut self) {
+    pub fn display_results(&mut self, name_algo: &str) {
         let mut scores = vec![];
         let mut nb_steps = vec![];
 
@@ -43,12 +43,12 @@ impl EMA {
             LineStyle::new()
         ); // and a custom colour
         let v = ContinuousView::new().add(s1);
-        Page::single(&v).save("src/results/scores-dqn.svg").unwrap();
+        Page::single(&v).save(format!("src/results/scores-{}.svg", name_algo)).unwrap();
 
         let s2: Plot = Plot::new(nb_steps).line_style(
             LineStyle::new()
         ); // and a custom colour
         let v = ContinuousView::new().add(s2);
-        Page::single(&v).save("src/results/nb-steps-dqn.svg").unwrap();
+        Page::single(&v).save(format!("src/results/nb-steps-{}.svg", name_algo)).unwrap();
     }
 }
