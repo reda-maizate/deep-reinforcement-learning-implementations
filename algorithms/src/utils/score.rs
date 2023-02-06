@@ -1,4 +1,8 @@
 use environnements::contracts::DeepSingleAgentEnv;
+use plotlib::page::Page;
+use plotlib::repr::Plot;
+use plotlib::style::LineStyle;
+use plotlib::view::ContinuousView;
 
 pub struct EMA {
     pub score: f64,
@@ -21,5 +25,30 @@ impl EMA {
             score_progress,
             nb_steps_progress,
         }
+    }
+
+    pub fn display_results(&mut self) {
+        let mut scores = vec![];
+        let mut nb_steps = vec![];
+
+        for i in 0..self.score_progress.len() {
+            scores.push((i as f64, self.score_progress[i]));
+        }
+
+        for i in 0..self.nb_steps_progress.len() {
+            nb_steps.push((i as f64, self.nb_steps_progress[i]));
+        }
+
+        let s1: Plot = Plot::new(scores).line_style(
+            LineStyle::new()
+        ); // and a custom colour
+        let v = ContinuousView::new().add(s1);
+        Page::single(&v).save("src/results/scores-dqn.svg").unwrap();
+
+        let s2: Plot = Plot::new(nb_steps).line_style(
+            LineStyle::new()
+        ); // and a custom colour
+        let v = ContinuousView::new().add(s2);
+        Page::single(&v).save("src/results/nb-steps-dqn.svg").unwrap();
     }
 }
