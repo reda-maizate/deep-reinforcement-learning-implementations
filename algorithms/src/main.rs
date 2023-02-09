@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::borrow::BorrowMut;
 use plotlib::page::Page;
 use plotlib::repr::Plot;
@@ -16,20 +18,24 @@ fn main() {
     // let mut grid_world_env_er = GridWorld::new(Some(5), Some(5));
 
     // DQN Basic
-    let mut dqn = DeepQLearning::new();
-    let mut ema = dqn.train(line_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1);
-    let model_dqn = dqn.get_model();
+    // let mut dqn = DeepQLearning::new();
+    // let mut ema = dqn.train(line_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1);
+    // let model_dqn = dqn.get_model();
     // DDQN Basic
     // let mut ddqn = DDQN::new();
     // let mut ema = ddqn.train(line_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1, 10);
     // let model_ddqn = ddqn.get_model();
     // DDQN with ER
     // let mut ddqn_er = DDQN::new();
-    // let mut ema = ddqn_er.train_with_er(line_world_env.borrow_mut(), 5_000, 0.99, 0.1, 0.1, 10, 100);
+    // let mut ema = ddqn_er.train_with_er(line_world_env.borrow_mut(), 5_000, 0.99, 0.1, 0.1, 10, 100, 1_000);
     // let model_ddqn_er = ddqn_er.get_model();
+    // DDQN with PER
+    let mut ddqn_per = DDQN::new();
+    let mut ema = ddqn_per.train_with_per(line_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1, 10, 100, 1_000);
+    let model_ddqn_per = ddqn_per.get_model();
 
-    println!("\nGradients: {:?}", model_dqn.trainable_variables());
-    model_dqn.variables().get("weight").unwrap().print();
+    println!("\nGradients: {:?}", model_ddqn_per.trainable_variables());
+    model_ddqn_per.variables().get("weight").unwrap().print();
 
-    ema.display_results("dqn");
+    ema.display_results("ddqn_per");
 }
