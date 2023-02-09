@@ -1,46 +1,41 @@
+extern crate core;
+
+use std::borrow::BorrowMut;
 use plotlib::page::Page;
 use plotlib::repr::Plot;
 use plotlib::style::{LineStyle};
 use plotlib::view::ContinuousView;
-use crate::to_do::dqn;
+use crate::to_do::{dqn::DeepQLearning, ddqn::DDQN};
 use environnements::to_do::deep_single_agent::{GridWorld, LineWorld};
 use environnements;
 
 pub mod to_do;
+pub mod utils;
 
 fn main() {
-    // let line_world_env = LineWorld::new(Option::Some(10));
-    // let grid_world_env = GridWorld::new(Some(5), Some(5));
-    let (dqn, ema_scores, ema_nb_step) = dqn::DeepQLearning::new(line_world_env).train();
-    // let (dqn, ema_scores, ema_nb_step) = dqn::DeepQLearning::new(grid_world_env).train();
-    println!("\nGradients: {:?}", dqn.trainable_variables());
-    dqn.variables().get("weight").unwrap().print();
+    let mut line_world_env = LineWorld::new(Option::Some(10));
+    let mut grid_world_env = GridWorld::new(Some(5), Some(5));
+    // let mut grid_world_env_er = GridWorld::new(Some(5), Some(5));
 
-    let mut scores = vec![];
-    let mut nb_steps = vec![];
-    for i in 0..ema_scores.len() {
-        scores.push((i as f64, ema_scores[i]));
-    }
+    // DQN Basic
+    // let mut dqn = DeepQLearning::new();
+    // let mut ema = dqn.train(line_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1);
+    // let model_dqn = dqn.get_model();
+    // DDQN Basic
+    // let mut ddqn = DDQN::new();
+    // let mut ema = ddqn.train(line_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1, 10);
+    // let model_ddqn = ddqn.get_model();
+    // DDQN with ER
+    // let mut ddqn_er = DDQN::new();
+    // let mut ema = ddqn_er.train_with_er(line_world_env.borrow_mut(), 5_000, 0.99, 0.1, 0.1, 10, 100, 1_000);
+    // let model_ddqn_er = ddqn_er.get_model();
+    // DDQN with PER
+    let mut ddqn_per = DDQN::new();
+    let mut ema = ddqn_per.train_with_per(line_world_env.borrow_mut(), 10_000, 0.99, 0.1, 0.1, 10, 100, 1_000);
+    let model_ddqn_per = ddqn_per.get_model();
 
-    for i in 0..ema_nb_step.len() {
-        nb_steps.push((i as f64, ema_nb_step[i]));
-    }
+    println!("\nGradients: {:?}", model_ddqn_per.trainable_variables());
+    model_ddqn_per.variables().get("weight").unwrap().print();
 
-    let s1: Plot = Plot::new(scores).line_style(
-        LineStyle::new()
-    ); // and a custom colour
-
-    let v = ContinuousView::new()
-        .add(s1);
-
-    Page::single(&v).save("src/results/scores-dqn.svg").unwrap();
-
-    let s2: Plot = Plot::new(nb_steps).line_style(
-        LineStyle::new()
-    ); // and a custom colour
-
-    let v = ContinuousView::new()
-        .add(s2);
-
-    Page::single(&v).save("src/results/nb-steps-dqn.svg").unwrap();
+    ema.display_results("ddqn_per");
 }
