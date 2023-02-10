@@ -2,19 +2,26 @@ use plotlib::page::Page;
 use plotlib::repr::Plot;
 use plotlib::style::{LineStyle};
 use plotlib::view::ContinuousView;
-use crate::to_do::dqn;
+use crate::to_do::{dqn, reinforce_learned_baseline};
+use crate::to_do::reinforce;
 use environnements::to_do::deep_single_agent::{GridWorld, LineWorld};
 use environnements;
 
 pub mod to_do;
 
 fn main() {
-    // let line_world_env = LineWorld::new(Option::Some(10));
+    // Environnements
+    let line_world_env = LineWorld::new(Option::Some(10));
     // let grid_world_env = GridWorld::new(Some(5), Some(5));
-    let (dqn, ema_scores, ema_nb_step) = dqn::DeepQLearning::new(line_world_env).train();
+
+    // Algorithms
+    // DQN
+    // let (dqn, ema_scores, ema_nb_step) = dqn::DeepQLearning::new(line_world_env).train();
     // let (dqn, ema_scores, ema_nb_step) = dqn::DeepQLearning::new(grid_world_env).train();
-    println!("\nGradients: {:?}", dqn.trainable_variables());
-    dqn.variables().get("weight").unwrap().print();
+
+    // REINFORCE
+    // let (pi, ema_scores, ema_nb_step) = reinforce::REinforce::new(line_world_env).train();
+    let (pi, ema_scores, ema_nb_step) = reinforce_learned_baseline::ReinforceWithLearnedBaseline::new(line_world_env).train();
 
     let mut scores = vec![];
     let mut nb_steps = vec![];
@@ -33,7 +40,7 @@ fn main() {
     let v = ContinuousView::new()
         .add(s1);
 
-    Page::single(&v).save("src/results/scores-dqn.svg").unwrap();
+    Page::single(&v).save("src/results/scores-reinforce-with-learned-baseline.svg").unwrap();
 
     let s2: Plot = Plot::new(nb_steps).line_style(
         LineStyle::new()
@@ -42,5 +49,5 @@ fn main() {
     let v = ContinuousView::new()
         .add(s2);
 
-    Page::single(&v).save("src/results/nb-steps-dqn.svg").unwrap();
+    Page::single(&v).save("src/results/nb-steps-reinforce-with-learned-baseline.svg").unwrap();
 }
