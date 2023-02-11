@@ -2,17 +2,22 @@ use plotlib::page::Page;
 use plotlib::repr::Plot;
 use plotlib::style::{LineStyle};
 use plotlib::view::ContinuousView;
-use crate::to_do::{dqn, reinforce_learned_baseline};
+use crate::to_do::{dqn, mcrr, reinforce_learned_baseline};
 use crate::to_do::reinforce;
 use environnements::to_do::deep_single_agent::{GridWorld, LineWorld};
+use environnements::to_do::mcrr_single_agent::{GridWorld as GridWorldMCRR, LineWorld as LineWorldMCRR};
 use environnements;
 
 pub mod to_do;
 
 fn main() {
-    // Environnements
-    let line_world_env = LineWorld::new(Option::Some(10));
+    // Environnements classic
+    // let line_world_env = LineWorld::new(Option::Some(10));
     // let grid_world_env = GridWorld::new(Some(5), Some(5));
+
+    // Environnements MCRR
+    let line_world_env_mcrr = LineWorldMCRR::new(Option::Some(10));
+    // let grid_world_env_mcrr = GridWorldMCRR::new(Some(5), Some(5));
 
     // Algorithms
     // DQN
@@ -21,8 +26,12 @@ fn main() {
 
     // REINFORCE
     // let (pi, ema_scores, ema_nb_step) = reinforce::REinforce::new(line_world_env).train();
-    let (pi, ema_scores, ema_nb_step) = reinforce_learned_baseline::ReinforceWithLearnedBaseline::new(line_world_env).train();
+    // let (pi, ema_scores, ema_nb_step) = reinforce_learned_baseline::ReinforceWithLearnedBaseline::new(line_world_env).train();
 
+    // MCRR
+    let mean_score = mcrr::MonteCarloRandomRollout::new(line_world_env_mcrr, Some(50)).run_line_world_n_games_and_return_mean_score(1000);
+    println!("Mean score: {}", mean_score);
+    /*
     let mut scores = vec![];
     let mut nb_steps = vec![];
     for i in 0..ema_scores.len() {
@@ -50,4 +59,5 @@ fn main() {
         .add(s2);
 
     Page::single(&v).save("src/results/nb-steps-reinforce-with-learned-baseline.svg").unwrap();
+    */
 }
