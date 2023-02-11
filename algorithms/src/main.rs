@@ -15,7 +15,6 @@ pub mod utils;
 fn main() {
     let mut line_world_env = LineWorld::new(Option::Some(10));
     let mut grid_world_env = GridWorld::new(Some(5), Some(5));
-    // let mut grid_world_env_er = GridWorld::new(Some(5), Some(5));
 
     // DQN Basic
     // let mut dqn = DeepQLearning::new();

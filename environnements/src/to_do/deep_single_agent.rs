@@ -128,7 +128,7 @@ impl DeepSingleAgentEnv for GridWorld {
     }
 
     fn state_dim(&self) -> usize {
-        2
+        1
     }
 
     fn is_game_over(&self) -> bool {
