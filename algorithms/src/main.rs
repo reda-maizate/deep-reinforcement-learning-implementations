@@ -30,7 +30,7 @@ fn main() {
 
     // MCRR
     let mean_score = mcrr::MonteCarloRandomRollout::new(line_world_env_mcrr, Some(50)).run_line_world_n_games_and_return_mean_score(1000);
-    println!("Mean score: {}", mean_score);
+    println!("Mean score: {:.4}", mean_score);
     /*
     let mut scores = vec![];
     let mut nb_steps = vec![];

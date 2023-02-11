@@ -55,8 +55,8 @@ impl<T: MCRRSingleAgentEnv> MonteCarloRandomRollout<T> {
         best_action
     }
 
-    pub fn run_line_world_n_games_and_return_mean_score(&mut self, games_count: usize) -> f32 {
-        let mut total = 0.0;
+    pub fn run_line_world_n_games_and_return_mean_score(&mut self, games_count: u32) -> f64 {
+        let mut total: f64 = 0.0;
 
         // Progress bar
         let mut pb = ProgressBar::new(games_count as u64);
@@ -69,9 +69,10 @@ impl<T: MCRRSingleAgentEnv> MonteCarloRandomRollout<T> {
                 let chosen_a = self.monte_carlo_random_rollout_and_choose_action();
                 self.env.act_with_action_id(chosen_a.unwrap());
             }
-            total += self.env.score();
+            total += self.env.score() as f64;
             pb.inc();
         }
-        total / games_count as f32
+        println!("total: {} / games_count: {}", total, games_count);
+        total / games_count as f64
     }
 }
