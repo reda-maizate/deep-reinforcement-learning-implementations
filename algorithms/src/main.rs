@@ -17,7 +17,7 @@ fn main() {
 
     // Environnements MCRR
     let line_world_env_mcrr = LineWorldMCRR::new(Option::Some(10));
-    // let grid_world_env_mcrr = GridWorldMCRR::new(Some(5), Some(5));
+    let grid_world_env_mcrr = GridWorldMCRR::new(Some(5), Some(5));
 
     // Algorithms
     // DQN
@@ -29,7 +29,7 @@ fn main() {
     // let (pi, ema_scores, ema_nb_step) = reinforce_learned_baseline::ReinforceWithLearnedBaseline::new(line_world_env).train();
 
     // MCRR
-    let mean_score = mcrr::MonteCarloRandomRollout::new(line_world_env_mcrr, Some(50)).run_line_world_n_games_and_return_mean_score(1000);
+    let mean_score = mcrr::MonteCarloRandomRollout::new(grid_world_env_mcrr, Some(20)).run_line_world_n_games_and_return_mean_score(1000);
     println!("Mean score: {:.4}", mean_score);
     /*
     let mut scores = vec![];

@@ -40,5 +40,5 @@ pub trait MCRRSingleAgentEnv {
     fn available_actions_ids(&self) -> Vec<usize>;
     fn reset(&mut self);
     fn view(&self);
-    fn clone(&self) -> Box<dyn MCRRSingleAgentEnv>;
+    fn clone(&self) -> Self;
 }

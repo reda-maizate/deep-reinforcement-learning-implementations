@@ -88,12 +88,12 @@ impl MCRRSingleAgentEnv for LineWorld {
         println!();
     }
 
-    fn clone(&self) -> Box<dyn MCRRSingleAgentEnv> {
-        Box::new(LineWorld {
-            nb_cells: self.nb_cells,
-            current_cell: self.current_cell,
-            step_count: self.step_count,
-        })
+    fn clone(&self) -> Self {
+        Self {
+            nb_cells: self.nb_cells.clone(),
+            current_cell: self.current_cell.clone(),
+            step_count: self.step_count.clone(),
+        }
     }
 }
 
@@ -203,13 +203,13 @@ impl MCRRSingleAgentEnv for GridWorld {
         }
     }
 
-    fn clone(&self) -> Box<dyn MCRRSingleAgentEnv> {
-        Box::new(GridWorld {
-            nb_cols: self.nb_cols,
-            nb_rows: self.nb_rows,
-            nb_cells: self.nb_cells,
-            current_cell: self.current_cell,
-            step_count: self.step_count,
-        })
+    fn clone(&self) -> Self {
+        Self {
+            nb_cols: self.nb_cols.clone(),
+            nb_rows: self.nb_rows.clone(),
+            nb_cells: self.nb_cells.clone(),
+            current_cell: self.current_cell.clone(),
+            step_count: self.step_count.clone(),
+        }
     }
 }
