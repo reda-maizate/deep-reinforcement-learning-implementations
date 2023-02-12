@@ -30,7 +30,10 @@ pub fn save_model(model_vs: &VarStore, path: &str) {
 
 pub fn load_model(path: &str) -> VarStore {
     let mut path: std::path::PathBuf = path.into();
+    println!("{:?}", path);
     let mut model_vs = VarStore::new(Device::Cpu);
-    VarStore::load(&mut model_vs, &mut path).unwrap();
+    println!("{:?}", model_vs.variables());
+    model_vs.load(&mut path).unwrap();
+    println!("{:?}", model_vs.variables());
     model_vs
 }

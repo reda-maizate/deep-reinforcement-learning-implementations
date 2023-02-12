@@ -34,8 +34,7 @@ fn main() {
     // REINFORCE
     // let (pi, ema_scores, ema_nb_step) = reinforce::REinforce::new(line_world_env).train();
     // let (pi, ema_scores, ema_nb_step) = reinforce_learned_baseline::ReinforceWithLearnedBaseline::new(line_world_env).train(true);
-    let pi_loaded = load_model("src/models/LineWorld/1reinforce_lb_max_iter_10000_g_0.99_alpha_pi_0.01_alpha_v_0.01.pt");
-    evaluate(LineWorld::new(Option::Some(10)), &pi_loaded, 1000);
+    evaluate(LineWorld::new(Option::Some(10)), "src/models/LineWorld/reinforce_lb_max_iter_10000_g_0.99_alpha_pi_0.01_alpha_v_0.01.pt", 1000);
     // MCRR
     // let mean_score = mcrr::MonteCarloRandomRollout::new(grid_world_env_mcrr, Some(20)).run_line_world_n_games_and_return_mean_score(1000);
     // println!("Mean score: {:.4}", mean_score);

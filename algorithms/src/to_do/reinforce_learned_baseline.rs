@@ -123,7 +123,7 @@ impl<T: DeepSingleAgentEnv> ReinforceWithLearnedBaseline<T> {
                     let log_pi_s_a_t = pi_s_a_t.log(); // Log2 ou log10 ?
                     // println!("log_pi_s_a_t: {:?}", log_pi_s_a_t);
 
-                    let loss_pi = self.alpha_pi * (self.gamma.powf(t as f32) as f64) * (G as f64) * log_pi_s_a_t;
+                    let loss_pi = - (self.alpha_pi * (self.gamma.powf(t as f32) as f64) * (G as f64) * log_pi_s_a_t);
                     // println!("loss: {:?}", loss);
 
                     // println!("-- Weights --");
@@ -188,7 +188,7 @@ impl<T: DeepSingleAgentEnv> ReinforceWithLearnedBaseline<T> {
             pb.inc();
         }
         if save {
-            let model_path = format!("src/models/{}/1reinforce_lb_max_iter_{}_g_{}_alpha_pi_{}_alpha_v_{}.pt",
+            let model_path = format!("src/models/{}/reinforce_lb_max_iter_{}_g_{}_alpha_pi_{}_alpha_v_{}.pt",
                     self.env.name(), self.max_iter_count, self.gamma, self.alpha_pi, self.alpha_v);
             save_model(&pi_vs, &model_path);
         }
@@ -196,10 +196,12 @@ impl<T: DeepSingleAgentEnv> ReinforceWithLearnedBaseline<T> {
     }
 }
 
-pub fn evaluate<T: DeepSingleAgentEnv>(env: T, model_vs: &VarStore, nb_games: usize) {
+pub fn evaluate<T: DeepSingleAgentEnv>(env: T, path: &str, nb_games: usize) {
     let mut env = env;
     let mut score = 0.0;
+    let mut model_vs = nn::VarStore::new(Device::Cpu);
     let model = pi_model(&model_vs.root(), env.max_action_count() as i64);
+    model_vs.load(path).unwrap();
     let start_time = Instant::now();
     let mut current_game = 0;
     while current_game < nb_games {
@@ -214,6 +216,6 @@ pub fn evaluate<T: DeepSingleAgentEnv>(env: T, model_vs: &VarStore, nb_games: us
         let a = argmax(&Vec::<f32>::from(&pi)).0;
         env.act_with_action_id(a);
     }
-    println!("Evaluation time : {:.2?}s", start_time.elapsed());
+    println!("Evaluation time : {:.2?}", start_time.elapsed());
     println!("Mean score: {}", score / nb_games as f64);
 }
