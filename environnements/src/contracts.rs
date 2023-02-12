@@ -42,3 +42,15 @@ pub trait MCRRSingleAgentEnv {
     fn view(&self);
     fn clone(&self) -> Self;
 }
+
+pub trait MCTSSingleAgentEnv {
+    fn state_id(&self) -> usize;
+    fn max_actions_count(&self) -> usize;
+    fn is_game_over(&self) -> bool;
+    fn act_with_action_id(&mut self, action_id: usize);
+    fn score(&self) -> f32;
+    fn available_actions_ids(&self) -> Vec<usize>;
+    fn reset(&mut self);
+    fn view(&self);
+    fn clone(&self) -> Self;
+}

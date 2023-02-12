@@ -1,4 +1,4 @@
-use crate::contracts::MCRRSingleAgentEnv;
+use crate::contracts::MCTSSingleAgentEnv;
 
 #[derive(Debug)]
 pub struct LineWorld {
@@ -23,16 +23,12 @@ impl LineWorld {
     }
 }
 
-impl MCRRSingleAgentEnv for LineWorld {
-    fn state_dim(&self) -> usize {
-        1
+impl MCTSSingleAgentEnv for LineWorld {
+    fn state_id(&self) -> usize {
+        self.current_cell
     }
 
-    fn state_description(&self) -> Vec<f64> {
-        vec![self.current_cell as f64 / (self.nb_cells as f64 - 1.0) * 2.0 - 1.0]
-    }
-
-    fn max_action_count(&self) -> usize {
+    fn max_actions_count(&self) -> usize {
         2
     }
 
@@ -126,17 +122,13 @@ impl GridWorld {
     }
 }
 
-impl MCRRSingleAgentEnv for GridWorld {
-    fn max_action_count(&self) -> usize {
+impl MCTSSingleAgentEnv for GridWorld {
+    fn max_actions_count(&self) -> usize {
         4
     }
 
-    fn state_description(&self) -> Vec<f64> {
-        vec![self.current_cell as f64 / (self.nb_cells as f64 - 1.0) * 2.0 - 1.0]
-    }
-
-    fn state_dim(&self) -> usize {
-        2
+    fn state_id(&self) -> usize {
+        self.current_cell
     }
 
     fn is_game_over(&self) -> bool {
