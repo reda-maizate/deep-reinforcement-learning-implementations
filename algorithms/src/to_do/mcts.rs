@@ -6,7 +6,7 @@ use rand::prelude::SliceRandom;
 
 pub struct Node {
     pub consideration_count: usize,
-    pub selection_count: u32,
+    pub selection_count: f32,
     pub mean_score: f32,
 }
 
@@ -14,12 +14,12 @@ impl Node {
     pub fn new() -> Self {
         Self {
             consideration_count: 0,
-            selection_count: 0,
+            selection_count: 0.0,
             mean_score: 0.0,
         }
     }
 
-    pub fn from(consideration_count: usize, selection_count: u32, mean_score: f32) -> Self {
+    pub fn from(consideration_count: usize, selection_count: f32, mean_score: f32) -> Self {
         Self {
             consideration_count,
             selection_count,
@@ -67,7 +67,7 @@ impl<T: MCTSSingleAgentEnv> MonteCarloTreeSearch<T> {
             // let tree_current_node = tree[&current_node].values().any(|stats| stats.selection_count == 0);
             // println!("tree_current_node: {:?}", tree_current_node);
             while !cloned_env.is_game_over() &&
-                tree[&current_node].values().any(|stats| stats.selection_count == 0) {
+                tree[&current_node].values().any(|stats| stats.selection_count == 0.0) {
 
                 let mut best_action = None;
                 let mut best_action_score = None;
@@ -101,7 +101,7 @@ impl<T: MCTSSingleAgentEnv> MonteCarloTreeSearch<T> {
             if !cloned_env.is_game_over() {
                 let random_action = tree[&current_node]
                     .iter()
-                    .filter(|(_, stats)| stats.selection_count == 0)
+                    .filter(|(_, stats)| stats.selection_count == 0.0)
                     .map(|(a, _)| a)
                     .choose(&mut rand::thread_rng());
 
