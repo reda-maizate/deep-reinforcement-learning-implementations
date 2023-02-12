@@ -1,5 +1,6 @@
 extern crate core;
 
+use environnements::contracts::DeepSingleAgentEnv;
 use crate::to_do::{dqn::DeepQLearning, ddqn::DDQN};
 use environnements::to_do::deep_single_agent::{GridWorld, LineWorld};
 use crate::to_do::functions::save_model;
@@ -9,7 +10,9 @@ pub mod utils;
 
 fn main() {
     // let mut line_world_env = LineWorld::new(Option::Some(10));
+    // line_world_env.play(true);
     // let mut grid_world_env = GridWorld::new(Some(5), Some(5));
+    // grid_world_env.play(true);
 
     // DQN Basic
     // let mut dqn = DeepQLearning::new();
