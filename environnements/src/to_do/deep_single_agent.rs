@@ -86,6 +86,14 @@ impl DeepSingleAgentEnv for LineWorld {
         }
         println!();
     }
+
+    fn clone_env(&self) -> Self {
+        Self {
+            nb_cells: self.nb_cells.clone(),
+            current_cell: self.current_cell.clone(),
+            step_count: self.step_count.clone(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -191,6 +199,16 @@ impl DeepSingleAgentEnv for GridWorld {
                 }
             }
             println!();
+        }
+    }
+
+    fn clone_env(&self) -> Self {
+        Self {
+            nb_cols: self.nb_cols.clone(),
+            nb_rows: self.nb_rows.clone(),
+            nb_cells: self.nb_cells.clone(),
+            current_cell: self.current_cell.clone(),
+            step_count: self.step_count.clone(),
         }
     }
 }

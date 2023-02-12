@@ -19,6 +19,7 @@ pub trait DeepSingleAgentEnv {
     fn available_actions_ids(&self) -> Vec<usize>;
     fn reset(&mut self);
     fn view(&self);
+    fn clone_env(&self) -> Self;
 }
 
 pub trait MDPEnv {

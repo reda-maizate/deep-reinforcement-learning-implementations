@@ -31,7 +31,7 @@ impl PrioritizedExperienceReplay {
             self.weights_buffer[i] = calculate_priority_weights(q, q_target, &s, a, r, &s_p, &aa_p, done, gamma)
         }
         if self.replay_buffer.len() >= self.capacity_buffer {
-            let index_min_priority = argmin(&self.weights_buffer);
+            let index_min_priority = argmin(&self.weights_buffer).0;
             self.replay_buffer.remove(index_min_priority);
             self.weights_buffer.remove(index_min_priority);
         }

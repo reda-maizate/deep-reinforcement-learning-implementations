@@ -68,7 +68,7 @@ pub fn get_random_mini_batch<T: Clone>(vector: &Vec<T>, batch_size: usize) -> Ve
     vector.choose_multiple(&mut rng, batch_size).cloned().collect()
 }
 
-pub fn argmin<T: Copy + PartialOrd>(vector: &Vec<T>) -> usize {
+pub fn argmin<T: Copy + PartialOrd>(vector: &Vec<T>) -> (usize, T) {
     let mut min = vector[0];
     let mut argmin:usize = 0;
     for (i, &v) in vector.iter().enumerate() {
@@ -77,7 +77,7 @@ pub fn argmin<T: Copy + PartialOrd>(vector: &Vec<T>) -> usize {
             argmin = i;
         }
     }
-    argmin
+    (argmin, min)
 }
 
 pub fn get_random_prioritized_mini_batch(vector: &Vec<usize>, weights: &Vec<f32>, batch_size: usize) -> Vec<usize> {
@@ -108,4 +108,8 @@ pub fn calculate_priority_weights(q: &Model, q_target: &Model, s: &Vec<f64>, a: 
     let q_s_a = no_grad(|| q(&tensor_s).unsqueeze(0).get(0).get(a as i64));
 
     (y - &Vec::<f32>::from(&q_s_a)[0]).abs()
+}
+
+pub fn vec_zeros<T: Clone>(zero_type: T, rows: usize, cols: usize) -> Vec<Vec<T>> {
+    vec![vec![zero_type; cols]; rows]
 }
