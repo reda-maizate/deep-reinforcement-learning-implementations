@@ -7,6 +7,7 @@ pub trait SingleAgentEnv {
     fn reset(&mut self);
     fn view(&self);
     fn reset_random(&mut self);
+    fn name(&self) -> String;
 }
 
 pub trait DeepSingleAgentEnv {
@@ -19,6 +20,7 @@ pub trait DeepSingleAgentEnv {
     fn available_actions_ids(&self) -> Vec<usize>;
     fn reset(&mut self);
     fn view(&self);
+    fn name(&self) -> String;
 }
 
 pub trait MDPEnv {
@@ -28,6 +30,7 @@ pub trait MDPEnv {
     fn is_state_terminal(&self, s: usize) -> bool;
     fn transition_probability(&self, s: usize, a: usize, s_p: usize, r: f32) -> f32;
     fn view_state(&self, s: usize);
+    fn name(&self) -> String;
 }
 
 pub trait MCRRSingleAgentEnv {
@@ -41,6 +44,7 @@ pub trait MCRRSingleAgentEnv {
     fn reset(&mut self);
     fn view(&self);
     fn clone(&self) -> Self;
+    fn name(&self) -> String;
 }
 
 pub trait MCTSSingleAgentEnv {
@@ -53,4 +57,5 @@ pub trait MCTSSingleAgentEnv {
     fn reset(&mut self);
     fn view(&self);
     fn clone(&self) -> Self;
+    fn name(&self) -> String;
 }

@@ -1,3 +1,7 @@
+use std::fs::File;
+use std::io::{BufReader, BufWriter};
+use tch::{Device, nn};
+use tch::nn::VarStore;
 
 pub fn get_data_from_index_list<T: Copy>(vector: &Vec<T>, index: &[usize]) -> Vec<T> {
     let mut new_vector = vec![];
@@ -17,4 +21,16 @@ pub fn argmax<T: Copy + std::cmp::PartialOrd>(vector: &Vec<T>) -> (usize, T) {
         }
     }
     (argmax, max)
+}
+
+pub fn save_model(model_vs: &VarStore, path: &str) {
+    let mut path: std::path::PathBuf = path.into();
+    model_vs.save(&mut path).unwrap();
+}
+
+pub fn load_model(path: &str) -> VarStore {
+    let mut path: std::path::PathBuf = path.into();
+    let mut model_vs = VarStore::new(Device::Cpu);
+    VarStore::load(&mut model_vs, &mut path).unwrap();
+    model_vs
 }

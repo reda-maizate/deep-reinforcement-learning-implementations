@@ -86,6 +86,9 @@ impl DeepSingleAgentEnv for LineWorld {
         }
         println!();
     }
+    fn name(&self) -> String {
+        "LineWorld".to_string()
+    }
 }
 
 #[derive(Debug)]
@@ -192,5 +195,8 @@ impl DeepSingleAgentEnv for GridWorld {
             }
             println!();
         }
+    }
+    fn name(&self) -> String {
+        "GridWorld".to_string()
     }
 }

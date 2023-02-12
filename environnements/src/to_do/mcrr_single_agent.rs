@@ -94,6 +94,10 @@ impl MCRRSingleAgentEnv for LineWorld {
             step_count: self.step_count.clone(),
         }
     }
+
+    fn name(&self) -> String {
+        "LineWorld".to_string()
+    }
 }
 
 #[derive(Debug)]
@@ -210,5 +214,9 @@ impl MCRRSingleAgentEnv for GridWorld {
             current_cell: self.current_cell.clone(),
             step_count: self.step_count.clone(),
         }
+    }
+
+    fn name(&self) -> String {
+        "GridWorld".to_string()
     }
 }
