@@ -1,10 +1,9 @@
 use core::f64;
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::BorrowMut;
 use std::f32;
 use environnements::contracts::DeepSingleAgentEnv;
 use pbr::ProgressBar;
 use tch::nn::{self, OptimizerConfig, VarStore};
-use rand::Rng;
 use tch::{Device, Kind, no_grad, Tensor};
 use crate::to_do::functions::*;
 use crate::utils::{score::EMA, per::PrioritizedExperienceReplay};
@@ -28,12 +27,12 @@ impl DDQN {
         }
     }
 
-    fn q_model(vs: &nn::Path, nact: i64) -> Model {
+    fn create_model(vs: &nn::Path, n_states: i64, n_act: i64) -> Model {
         let conf = nn::LinearConfig {
             bias: true,
             ..Default::default()
         };
-        let linear = nn::linear(vs, 1, nact, conf);
+        let linear = nn::linear(vs, n_states, n_act, conf);
         let seq = nn::seq()
             .add(linear);
 
@@ -46,16 +45,18 @@ impl DDQN {
     pub fn train<T: DeepSingleAgentEnv>(&mut self, env: &mut T, max_iter_count: u32,
                                         gamma: f32, alpha: f64, epsilon: f32,
                                         target_update_frequency: u32) -> EMA {
-        let q = Self::q_model(
+        let q = Self::create_model(
             &self.q_model.root(),
+            env.state_dim() as i64,
             env.max_action_count() as i64
         );
         let mut optimizer = nn::Sgd::default().build(
             &self.q_model,
             alpha
         ).unwrap();
-        let q_target = Self::q_model(
+        let q_target = Self::create_model(
             &self.q_target_model.root(),
+            env.state_dim() as i64,
             env.max_action_count() as i64
         );
 
@@ -111,16 +112,18 @@ impl DDQN {
                                                 gamma: f32, alpha: f64, epsilon: f32,
                                                 target_update_frequency: u32, batch_size: usize,
                                                 capacity_buffer: usize) -> EMA {
-        let q = Self::q_model(
+        let q = Self::create_model(
             &self.q_model.root(),
+            env.state_dim() as i64,
             env.max_action_count() as i64
         );
         let mut optimizer = nn::Sgd::default().build(
             &self.q_model,
             alpha
         ).unwrap();
-        let q_target = Self::q_model(
+        let q_target = Self::create_model(
             &self.q_target_model.root(),
+            env.state_dim() as i64,
             env.max_action_count() as i64
         );
         let mut replay_buffer = Vec::new();
@@ -184,16 +187,18 @@ impl DDQN {
                                                  gamma: f32, alpha: f64, epsilon: f32,
                                                  target_update_frequency: u32, batch_size: usize,
                                                  capacity_buffer: usize) -> EMA {
-        let q = Self::q_model(
+        let q = Self::create_model(
             &self.q_model.root(),
+            env.state_dim() as i64,
             env.max_action_count() as i64
         );
         let mut optimizer = nn::Sgd::default().build(
             &self.q_model,
             alpha
         ).unwrap();
-        let q_target = Self::q_model(
+        let q_target = Self::create_model(
             &self.q_target_model.root(),
+            env.state_dim() as i64,
             env.max_action_count() as i64
         );
 
@@ -259,5 +264,36 @@ impl DDQN {
 
     pub fn get_model(&mut self) -> &VarStore {
         &self.q_target_model
+    }
+
+    pub fn load_model<T: DeepSingleAgentEnv>(env: &mut T, path: &str) -> Model {
+        let mut model_vs = VarStore::new(Device::Cpu);
+        let model = Self::create_model(
+            &model_vs.root(),
+            env.state_dim() as i64,
+            env.max_action_count() as i64
+        );
+        model_vs.load(path).unwrap();
+        model
+    }
+
+    pub fn evaluate_model<T: DeepSingleAgentEnv>(env: &mut T, model: &Model) {
+        let mut score = 0.0;
+        let mut current_game = 0;
+        while current_game < 1000 {
+            if env.is_game_over() {
+                score += env.score() as f64;
+                current_game += 1;
+                env.reset();
+            }
+            let s = env.state_description();
+            let tensor_s = Tensor::of_slice(&s).to_kind(Kind::Float);
+            let pred = no_grad(|| model(&tensor_s));
+            let aa = env.available_actions_ids();
+            let a = aa[argmax(&get_data_from_index_list(&Vec::<f32>::from(&pred), aa.as_slice())).0];
+            env.act_with_action_id(a);
+        }
+        println!("Score: {}", score);
+        println!("Mean score: {}", score / 1000 as f64);
     }
 }

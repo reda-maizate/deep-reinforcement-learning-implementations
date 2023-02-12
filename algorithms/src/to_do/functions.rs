@@ -1,5 +1,6 @@
-use rand::{thread_rng, seq::SliceRandom, Rng, prelude::*};
+use rand::{thread_rng, seq::SliceRandom, Rng};
 use tch::{Kind, no_grad, Tensor};
+use tch::nn::VarStore;
 use environnements::contracts::DeepSingleAgentEnv;
 use crate::utils::score::EMA;
 
@@ -48,8 +49,8 @@ pub fn step<T: DeepSingleAgentEnv>(env: &mut T, q: &Model, tensor_s: &Tensor, aa
     if (thread_rng().gen_range(0.0..1.0) as f32).partial_cmp(&epsilon).unwrap().is_lt() {
         action_id = aa[thread_rng().gen_range(0..aa.len())];
     } else {
-        let q_prep = no_grad(|| q(&tensor_s));
-        action_id = aa[argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_prep), aa.as_slice())).0];
+        let q_pred = no_grad(|| q(&tensor_s));
+        action_id = aa[argmax(&get_data_from_index_list(&Vec::<f32>::from(&q_pred), aa.as_slice())).0];
     }
 
     let old_score = env.score();
@@ -108,4 +109,8 @@ pub fn calculate_priority_weights(q: &Model, q_target: &Model, s: &Vec<f64>, a: 
     let q_s_a = no_grad(|| q(&tensor_s).unsqueeze(0).get(0).get(a as i64));
 
     (y - &Vec::<f32>::from(&q_s_a)[0]).abs()
+}
+
+pub fn save_model(model_vs: &VarStore, path: &str) {
+    model_vs.save(path).unwrap();
 }

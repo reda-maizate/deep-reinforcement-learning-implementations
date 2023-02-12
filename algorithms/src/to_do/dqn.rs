@@ -3,7 +3,6 @@ use std::f32;
 use std::fmt::Debug;
 use pbr::ProgressBar;
 use tch::nn::{self, OptimizerConfig, VarStore};
-use rand::{Rng, thread_rng};
 use tch::{Device, Kind, no_grad, Tensor};
 use environnements::contracts::DeepSingleAgentEnv;
 use crate::to_do::functions::{argmax, get_data_from_index_list, update_score, step};
@@ -26,12 +25,12 @@ impl DeepQLearning {
         }
     }
 
-    fn model(vs: &nn::Path, nact: i64) -> Model {
+    pub fn create_model(vs: &nn::Path, n_states: i64, n_act: i64) -> Model {
         let conf = nn::LinearConfig{
             bias: true,
             ..Default::default()
         };
-        let linear = nn::linear(vs, 1,  nact, conf);
+        let linear = nn::linear(vs, n_states,  n_act, conf);
         let seq = nn::seq()
             .add(linear);
 
@@ -43,8 +42,9 @@ impl DeepQLearning {
 
     pub fn train<T: DeepSingleAgentEnv>(&mut self, env: &mut T, max_iter_count: u32,
                                         gamma: f32, alpha: f64, epsilon: f32) -> EMA {
-        let q = Self::model(
+        let q = Self::create_model(
             &self.q_model.root(),
+            env.state_dim() as i64,
             env.max_action_count() as i64
         );
         let mut optimizer = nn::Sgd::default().build(
@@ -59,7 +59,7 @@ impl DeepQLearning {
         pb.format("╢▌▌░╟");
 
         for _ in 0..max_iter_count {
-            //self.env.view();
+            // env.view();
             update_score(env.borrow_mut(), ema.borrow_mut());
 
             let s = env.state_description();
@@ -98,5 +98,36 @@ impl DeepQLearning {
 
     pub fn get_model(&mut self) -> &VarStore {
         &self.q_model
+    }
+
+    pub fn load_model<T: DeepSingleAgentEnv>(env: &mut T, path: &str) -> Model {
+        let mut model_vs = VarStore::new(Device::Cpu);
+        let model = Self::create_model(
+            &model_vs.root(),
+            env.state_dim() as i64,
+            env.max_action_count() as i64
+        );
+        model_vs.load(path).unwrap();
+        model
+    }
+
+    pub fn evaluate_model<T: DeepSingleAgentEnv>(env: &mut T, model: &Model) {
+        let mut score = 0.0;
+        let mut current_game = 0;
+        while current_game < 1000 {
+            if env.is_game_over() {
+                score += env.score() as f64;
+                current_game += 1;
+                env.reset();
+            }
+            let s = env.state_description();
+            let tensor_s = Tensor::of_slice(&s).to_kind(Kind::Float);
+            let pred = no_grad(|| model(&tensor_s));
+            let aa = env.available_actions_ids();
+            let a = aa[argmax(&get_data_from_index_list(&Vec::<f32>::from(&pred), aa.as_slice())).0];
+            env.act_with_action_id(a);
+        }
+        println!("Score: {}", score);
+        println!("Mean score: {}", score / 1000 as f64);
     }
 }
