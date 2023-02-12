@@ -1,4 +1,6 @@
 use crate::contracts::DeepSingleAgentEnv;
+use std::io;
+use rand::{thread_rng, Rng};
 
 #[derive(Debug)]
 pub struct LineWorld {
@@ -19,6 +21,36 @@ impl LineWorld {
             nb_cells: cells,
             current_cell: (cells / 2) as usize,
             step_count: 0,
+        }
+    }
+
+    pub fn play(&mut self, random: bool) {
+        while !self.is_game_over() {
+            self.view();
+            if random {
+                let aa = self.available_actions_ids();
+                let action_id = aa[thread_rng().gen_range(0..aa.len())];
+                self.act_with_action_id(action_id);
+            } else {
+                println!("0:Left 1:Right");
+                println!("Saisi action: ");
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+                let input = input.trim().parse::<usize>().unwrap();
+                if input > 1 {
+                    continue;
+                }
+                self.act_with_action_id(input);
+            }
+        }
+        self.view();
+        println!("\nSaisir 1 pour relancer une partie: ");
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        let input = input.trim().parse::<usize>().unwrap();
+        if input == 1 {
+            self.reset();
+            self.play(random);
         }
     }
 }
@@ -116,6 +148,36 @@ impl GridWorld {
             step_count: 0,
         }
     }
+
+    pub fn play(&mut self, random: bool) {
+        while !self.is_game_over() {
+            self.view();
+            if random {
+                let aa = self.available_actions_ids();
+                let action_id = aa[thread_rng().gen_range(0..aa.len())];
+                self.act_with_action_id(action_id);
+            } else {
+                println!("0:Left 1:Right 2:Up 3:Down");
+                println!("Saisi action: ");
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+                let input = input.trim().parse::<usize>().unwrap();
+                if input > 4 {
+                    continue;
+                }
+                self.act_with_action_id(input);
+            }
+        }
+        self.view();
+        println!("\nSaisir 1 pour relancer une partie: ");
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        let input = input.trim().parse::<usize>().unwrap();
+        if input == 1 {
+            self.reset();
+            self.play(random);
+        }
+    }
 }
 
 impl DeepSingleAgentEnv for GridWorld {
@@ -128,7 +190,7 @@ impl DeepSingleAgentEnv for GridWorld {
     }
 
     fn state_dim(&self) -> usize {
-        2
+        1
     }
 
     fn is_game_over(&self) -> bool {
@@ -174,7 +236,7 @@ impl DeepSingleAgentEnv for GridWorld {
     }
 
     fn view(&self) {
-        println!("Game Over: {}", self.is_game_over());
+        println!("\nGame Over: {}", self.is_game_over());
         println!("Score: {}", self.score());
         for i in 0..self.nb_cols {
             for j in 0..self.nb_rows {
