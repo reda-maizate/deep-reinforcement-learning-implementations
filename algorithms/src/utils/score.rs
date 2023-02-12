@@ -1,4 +1,3 @@
-use environnements::contracts::DeepSingleAgentEnv;
 use plotlib::page::Page;
 use plotlib::repr::Plot;
 use plotlib::style::LineStyle;
