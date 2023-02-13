@@ -2,6 +2,7 @@ use environnements::contracts::MCRRSingleAgentEnv;
 use environnements::to_do::mcrr_single_agent::LineWorld;
 use pbr::ProgressBar;
 use rand::seq::SliceRandom;
+use crate::to_do::functions::plot_scores_and_nb_steps;
 
 #[derive(Debug)]
 pub struct MonteCarloRandomRollout<T> {
@@ -55,12 +56,15 @@ impl<T: MCRRSingleAgentEnv> MonteCarloRandomRollout<T> {
         best_action
     }
 
-    pub fn run_line_world_n_games_and_return_mean_score(&mut self, games_count: u32) -> f64 {
+    pub fn run_line_world_n_games_and_return_mean_score(&mut self, games_count: u32) {
         let mut total: f64 = 0.0;
 
         // Progress bar
         let mut pb = ProgressBar::new(games_count as u64);
         pb.format("╢▌▌░╟");
+        let mut scores = Vec::new();
+        let mut nb_steps = Vec::new();
+        let mut current_step = 0.0;
 
         for _ in 0..games_count {
             self.env.reset();
@@ -68,11 +72,14 @@ impl<T: MCRRSingleAgentEnv> MonteCarloRandomRollout<T> {
             while !self.env.is_game_over() {
                 let chosen_a = self.monte_carlo_random_rollout_and_choose_action();
                 self.env.act_with_action_id(chosen_a.unwrap());
+                current_step += 1.0;
             }
             total += self.env.score() as f64;
+            scores.push(self.env.score() as f64);
+            nb_steps.push(current_step);
+            current_step = 0.0;
             pb.inc();
         }
-        println!("total: {} / games_count: {}", total, games_count);
-        total / games_count as f64
+        plot_scores_and_nb_steps(format!("mcrr-{:?}-{}", games_count, self.env.name()), scores, nb_steps);
     }
 }

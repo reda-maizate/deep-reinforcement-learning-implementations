@@ -1,5 +1,9 @@
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
+use plotlib::page::Page;
+use plotlib::repr::Plot;
+use plotlib::style::LineStyle;
+use plotlib::view::ContinuousView;
 use tch::{Device, nn};
 use tch::nn::VarStore;
 
@@ -36,4 +40,36 @@ pub fn load_model(path: &str) -> VarStore {
     model_vs.load(&mut path).unwrap();
     println!("{:?}", model_vs.variables());
     model_vs
+}
+
+pub fn plot_scores_and_nb_steps(name: String, ema_scores: Vec<f64>, ema_nb_step: Vec<f64>) {
+    let mut scores = vec![];
+    let mut nb_steps = vec![];
+
+    for i in 0..ema_scores.len() {
+        scores.push((i as f64, ema_scores[i]));
+    }
+
+    for i in 0..ema_nb_step.len() {
+        nb_steps.push((i as f64, ema_nb_step[i]));
+    }
+
+    let s1: Plot = Plot::new(scores).line_style(
+        LineStyle::new()
+    ); // and a custom colour
+
+    let v = ContinuousView::new()
+        .add(s1)
+        .y_range(0.0, 1.0);
+
+    Page::single(&v).save(&format!("src/results/gridworld/scores-{}.svg", name)).unwrap();
+
+    let s2: Plot = Plot::new(nb_steps).line_style(
+        LineStyle::new()
+    ); // and a custom colour
+
+    let v = ContinuousView::new()
+        .add(s2);
+
+    Page::single(&v).save(&format!("src/results/gridworld/nb-steps-{}.svg", name)).unwrap();
 }

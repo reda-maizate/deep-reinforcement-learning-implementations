@@ -9,8 +9,12 @@ use tch::nn::{self, OptimizerConfig, VarStore};
 use rand::Rng;
 use tch::{Device, Kind, no_grad, Tensor};
 use environnements::contracts::DeepSingleAgentEnv;
+use plotlib::page::Page;
+use plotlib::repr::Plot;
+use plotlib::style::LineStyle;
+use plotlib::view::ContinuousView;
 use random_choice::random_choice;
-use crate::to_do::functions::{argmax, get_data_from_index_list, load_model, save_model};
+use crate::to_do::functions::{argmax, get_data_from_index_list, load_model, plot_scores_and_nb_steps, save_model};
 
 
 #[derive(Debug)]
@@ -58,13 +62,23 @@ fn v_model(vs: &nn::Path) -> Model {
 }
 
 impl<T: DeepSingleAgentEnv> ReinforceWithLearnedBaseline<T> {
-    pub fn new(env: T) -> Self {
-        Self {
-            env,
-            max_iter_count: 10_000,
-            gamma: 0.99,
-            alpha_pi: 0.01,
-            alpha_v: 0.01
+    pub fn new(env: T, max_iter_count: u32) -> Self {
+        if max_iter_count > 0 {
+            Self {
+                env,
+                max_iter_count,
+                gamma: 0.99,
+                alpha_pi: 0.01,
+                alpha_v: 0.01
+            }
+        } else {
+            Self {
+                env,
+                max_iter_count: 10_000,
+                gamma: 0.99,
+                alpha_pi: 0.01,
+                alpha_v: 0.01
+            }
         }
     }
 
@@ -94,6 +108,7 @@ impl<T: DeepSingleAgentEnv> ReinforceWithLearnedBaseline<T> {
         // Progress bar
         let mut pb = ProgressBar::new(self.max_iter_count as u64);
         pb.format("╢▌▌░╟");
+        let mut current_game = 0;
 
         for _ in 0..self.max_iter_count {
             // self.env.view();
@@ -184,30 +199,37 @@ impl<T: DeepSingleAgentEnv> ReinforceWithLearnedBaseline<T> {
             let r = new_score - old_score;
 
             episode_rewards_buffer.push(r);
-            step += 1.0;
+            // step += 1.0;
             pb.inc();
         }
         if save {
-            let model_path = format!("src/models/{}/reinforce_lb_max_iter_{}_g_{}_alpha_pi_{}_alpha_v_{}.pt",
-                    self.env.name(), self.max_iter_count, self.gamma, self.alpha_pi, self.alpha_v);
+            let model_path = format!("src/models/{}/reinforce_lb_max_it_{}.pt",
+                    self.env.name(), self.max_iter_count);
             save_model(&pi_vs, &model_path);
         }
         (pi_vs, ema_score_progress, ema_nb_steps_progress)
     }
 }
 
-pub fn evaluate<T: DeepSingleAgentEnv>(env: T, path: &str, nb_games: usize) {
+pub fn evaluate<T: DeepSingleAgentEnv>(env: T, path: &str, nb_steps_to_train: usize) {
     let mut env = env;
     let mut score = 0.0;
     let mut model_vs = nn::VarStore::new(Device::Cpu);
     let model = pi_model(&model_vs.root(), env.max_action_count() as i64);
     model_vs.load(path).unwrap();
-    let start_time = Instant::now();
     let mut current_game = 0;
-    while current_game < nb_games {
+
+    let mut scores = vec![];
+    let mut nb_steps: Vec<f64> = vec![];
+    let mut nb_step = 0.0;
+
+    while current_game < 500 {
         if env.is_game_over() {
             score += env.score() as f64;
             current_game += 1;
+            scores.push(env.score() as f64);
+            nb_steps.push(nb_step);
+            nb_step = 0.0;
             env.reset();
         }
         let s = env.state_description();
@@ -215,7 +237,7 @@ pub fn evaluate<T: DeepSingleAgentEnv>(env: T, path: &str, nb_games: usize) {
         let pi = no_grad(|| model(&tensor_s).softmax(0, Kind::Float));
         let a = argmax(&Vec::<f32>::from(&pi)).0;
         env.act_with_action_id(a);
+        nb_step += 1.0;
     }
-    println!("Evaluation time : {:.2?}", start_time.elapsed());
-    println!("Mean score: {}", score / nb_games as f64);
+    plot_scores_and_nb_steps(format!("reinforce-with-lb-{:?}-{}", nb_steps_to_train, env.name()), scores, nb_steps);
 }
