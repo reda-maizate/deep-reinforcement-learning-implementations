@@ -2,7 +2,7 @@ use plotlib::page::Page;
 use plotlib::repr::Plot;
 use plotlib::style::{LineStyle};
 use plotlib::view::ContinuousView;
-use crate::to_do::{dqn, mcrr, reinforce_learned_baseline};
+use crate::to_do::{mcrr, reinforce_learned_baseline};
 use crate::to_do::reinforce;
 use environnements::to_do::deep_single_agent::{GridWorld, LineWorld};
 use environnements::to_do::mcrr_single_agent::{GridWorld as GridWorldMCRR, LineWorld as LineWorldMCRR};
