@@ -94,28 +94,13 @@ impl<T: DeepSingleAgentEnv> REinforce<T> {
 
                     let episode_states_buffer_t = Tensor::of_slice(&episode_states_buffer[t])
                         .to_kind(Kind::Float);
-                    // println!("episode_states_buffer_t: {:?}", episode_states_buffer_t);
                     let mut pi_s_a_t = pi(&episode_states_buffer_t).softmax(0, Kind::Float);
-                    // println!("prediction training: {:?}", pi_s_a_t);
                     pi_s_a_t = pi_s_a_t.get(episode_actions_buffer[t] as i64);
-                    // println!("pi_s_a_t: {:?}", pi_s_a_t);
                     let log_pi_s_a_t = pi_s_a_t.log(); // Log2 ou log10 ?
-                    // println!("log_pi_s_a_t: {:?}", log_pi_s_a_t);
 
                     let loss = - (self.alpha * (self.gamma.powf(t as f32) as f64) * (G as f64) * log_pi_s_a_t);
-                    // println!("loss: {:?}", loss);
 
-                    // println!("-- Weights --");
-                    // model_vs.variables().get("weight").unwrap().print();
-                    // println!("-- Biases --");
-                    // model_vs.variables().get("bias").unwrap().print();
-                    // Add
                     optimizer.backward_step(&loss);
-                    // println!("---------------------");
-                    // println!("-- Weights --");
-                    // model_vs.variables().get("weight").unwrap().print();
-                    // println!("-- Biases --");
-                    // model_vs.variables().get("bias").unwrap().print();
                 }
 
                 if first_episode {
