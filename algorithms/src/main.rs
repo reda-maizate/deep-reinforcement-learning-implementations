@@ -54,4 +54,5 @@ fn main() {
     // model_dqn.variables().get("weight").unwrap().print();
 
     // ema.display_results("dqn");
+    /* The Pacman game is available to play in the file drl-project/src/main.rs */
 }
